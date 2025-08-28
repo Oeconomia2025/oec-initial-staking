@@ -66,7 +66,7 @@ const stakingPools = [
     lockPeriod: "90 Days",
     lockDays: 90,
     minStake: 2000,
-    maxStake: 0,
+    maxStake: 100000,
     totalStaked: 0,
     participants: 0,
     description: "Maximum APY with 90-day lock period",
@@ -170,18 +170,18 @@ export default function Pools() {
 
               {/* Expanded Content */}
               {expandedPool === pool.id && (
-                <Card className="rounded-t-none border-t-0 bg-gray-900/50 backdrop-blur-sm">
+                <Card className="rounded-t-none border-t-0 bg-gradient-to-r from-white-900/80 to-slate-800/80 backdrop-blur-sm">
                   <div className="p-2 sm:p-3 space-y-2">
                     {/* Navigation Tabs and Action Buttons */}
                     <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
-                      <div className="flex bg-gray-800 rounded-md p-0.5 w-full sm:w-1/2">
+                      <div className="flex bg-black rounded-md p-0.5 w-full sm:w-1/2">
                         {['Stake', 'Unstake', 'Rewards'].map((tab) => (
                           <button
                             key={tab}
                             onClick={() => setTab(pool.id, tab)}
                             className={`flex-1 min-w-[60px] px-2 py-1 rounded text-[0.6rem] sm:text-xs font-medium transition-all duration-200 whitespace-nowrap ${
                               activeTab[pool.id] === tab
-                                ? 'bg-slate-600 text-white shadow-sm'
+                                ? 'bg-slate-800 text-white shadow-sm'
                                 : 'text-gray-300 hover:text-white hover:bg-gray-700/50'
                             }`}
                           >
@@ -190,7 +190,7 @@ export default function Pools() {
                         ))}
                       </div>
                       <div className="flex flex-col sm:flex-row gap-1 sm:space-x-1">
-                        <Button variant="outline" size="sm" className="border-red-500 text-red-400 hover:bg-red-500/10 text-[0.6rem] sm:text-xs h-7">
+                        <Button variant="outline" size="sm" className="bg-red-500 text-white-400 hover:bg-red-500/10 text-[0.6rem] sm:text-xs h-7">
                           Early Withdraw
                         </Button>
                       </div>
@@ -208,7 +208,7 @@ export default function Pools() {
                               placeholder="0"
                               value={stakeAmount[pool.id] || ''}
                               onChange={(e) => handleStakeAmountChange(pool.id, e.target.value)}
-                              className="w-full bg-gray-800 border border-gray-600 rounded-md p-2 text-sm sm:text-base text-white placeholder-gray-400 focus:border-blue-500 focus:outline-none"
+                              className="w-full bg-black border border-gray-600 rounded-md p-2 text-sm sm:text-base text-white placeholder-gray-400 focus:border-blue-500 focus:outline-none"
                             />
                           </div>
 
@@ -233,8 +233,8 @@ export default function Pools() {
                           </Button>
                         </div>
 
-                        <div className="space-y-1">
-                          <div className="bg-gray-800/50 rounded-md p-2 sm:p-3 space-y-2">
+                        <div className="space-y-2">
+                          <div className="bg-black rounded-md p-2 sm:p-2 space-y-2">
                             <div className="flex justify-between items-start">
                               <span className="text-gray-400 text-[0.6rem] sm:text-xs">Estimated Daily Rewards:</span>
                               <span className="font-semibold text-green-400 text-[0.6rem] sm:text-xs">0.00 OEC</span>
@@ -249,7 +249,7 @@ export default function Pools() {
                             </div>
                           </div>
 
-                          <div className="space-y-1 text-[0.6rem] sm:p-3 sm:text-xs">
+                          <div className="space-y-1 text-[0.6rem] sm:p-2 sm:text-xs">
                             <div className="flex justify-between">
                               <span className="text-gray-400">Min Stake:</span>
                               <span>{formatNumber(pool.minStake)} OEC</span>
@@ -279,7 +279,7 @@ export default function Pools() {
                               placeholder="0"
                               value={stakeAmount[pool.id] || ''}
                               onChange={(e) => handleStakeAmountChange(pool.id, e.target.value)}
-                              className="w-full bg-gray-800 border border-gray-600 rounded-md p-2 text-sm sm:text-base text-white placeholder-gray-400 focus:border-blue-500 focus:outline-none"
+                              className="w-full bg-black border border-gray-600 rounded-md p-2 text-sm sm:text-base text-white placeholder-gray-400 focus:border-blue-500 focus:outline-none"
                             />
                           </div>
 
@@ -305,7 +305,7 @@ export default function Pools() {
                         </div>
 
                         <div className="space-y-2">
-                          <div className="bg-gray-800/50 rounded-md p-2 sm:p-3 space-y-2">
+                          <div className="bg-black rounded-md p-2 sm:p-2 space-y-2">
                             <div className="flex justify-between items-start">
                               <span className="text-gray-400 text-[0.6rem] sm:text-xs">Estimated Daily Rewards:</span>
                               <span className="font-semibold text-green-400 text-[0.6rem] sm:text-xs">0.00 OEC</span>
@@ -339,10 +339,10 @@ export default function Pools() {
                         </div>
 
                         <div className="space-y-2">
-                          <div className="bg-gray-800/50 rounded-md p-2 sm:p-3 space-y-2">
+                          <div className="bg-black rounded-md p-2 sm:p-2 space-y-2">
                             <div className="flex justify-between items-start">
                               <span className="text-gray-400 text-[0.6rem] sm:text-xs">Total Earned:</span>
-                              <span className="font-semibold text-[0.6rem] sm:text-xs">0.00 OEC</span>
+                              <span className="font-semibold text-[0.6rem] sm:text-xs">0.00 DDB</span>
                             </div>
                             <div className="flex justify-between items-start">
                               <span className="text-gray-400 text-[0.6rem] sm:text-xs">Next Reward:</span>
@@ -364,7 +364,7 @@ export default function Pools() {
         </div>
 
         {/* Pool Statistics */}
-        <Card className="crypto-card p-2 sm:p-3 border">
+        <Card className="crypto-card p-2 sm:p-3 border bg-gray-900/80">
           <h3 className="text-sm sm:text-base font-semibold mb-2 flex items-center">
             <TrendingUp className="w-3 h-3 sm:w-4 sm:h-4 mr-1 text-crypto-green" />
             Pool Statistics
