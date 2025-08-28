@@ -60,20 +60,24 @@ export default function ROICalculator() {
 
   const roiData = calculateROI();
 
+
+
+
+  
   return (
     <Layout>
-      <div className="container mx-auto px-6 py-8 space-y-8">
+      <div className="container mx-auto px-4 sm:px-6 py-4 sm:py-5 space-y-2.5 sm:space-y-3 mt-3">
 
 
         {/* Wallet Connection Notice */}
         {!isConnected && (
-          <Card className="crypto-card p-4 border mb-6 bg-gradient-to-r from-yellow-500/10 to-orange-500/10 border-yellow-500/30">
+          <Card className="crypto-card p-3 border mb-3 bg-gradient-to-r from-yellow-500/10 to-orange-500/10 border-yellow-500/30">
             <div className="flex items-center justify-between">
-              <div className="flex items-center space-x-3">
-                <Wallet className="w-5 h-5 text-yellow-400" />
+              <div className="flex items-center space-x-2">
+                <Wallet className="w-4 h-4 text-yellow-400" />
                 <div>
-                  <p className="text-sm font-medium">Connect your wallet to start staking</p>
-                  <p className="text-xs text-gray-400">Calculator works without connection, but you'll need a wallet to stake</p>
+                  <p className="text-xs font-medium">Connect your wallet to start staking</p>
+                  <p className="text-[0.6rem] text-gray-400">You can browse pools without connection, but need a wallet to stake</p>
                 </div>
               </div>
               <div className="max-w-xs">

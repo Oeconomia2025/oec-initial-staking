@@ -1,9 +1,15 @@
 import { useState } from "react";
 import { Layout } from "@/components/layout";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
-import { 
+import {
   Trophy,
   Award,
   Star,
@@ -15,7 +21,7 @@ import {
   TrendingUp,
   DollarSign,
   Clock,
-  Activity
+  Activity,
 } from "lucide-react";
 import { WalletConnect } from "@/components/wallet-connect";
 import { WalletSetupGuide } from "@/components/wallet-setup-guide";
@@ -31,7 +37,7 @@ const mockAchievements = [
     completed: false,
     progress: 0,
     reward: "5 OEC",
-    category: "Beginner"
+    category: "Beginner",
   },
   {
     id: 2,
@@ -41,7 +47,7 @@ const mockAchievements = [
     completed: false,
     progress: 0,
     reward: "50 OEC",
-    category: "Loyalty"
+    category: "Loyalty",
   },
   {
     id: 3,
@@ -51,7 +57,7 @@ const mockAchievements = [
     completed: false,
     progress: 0,
     reward: "100 OEC",
-    category: "Explorer"
+    category: "Explorer",
   },
   {
     id: 4,
@@ -61,7 +67,7 @@ const mockAchievements = [
     completed: false,
     progress: 0,
     reward: "500 OEC",
-    category: "Whale"
+    category: "Whale",
   },
   {
     id: 5,
@@ -71,7 +77,7 @@ const mockAchievements = [
     completed: false,
     progress: 0,
     reward: "200 OEC",
-    category: "Strategy"
+    category: "Strategy",
   },
   {
     id: 6,
@@ -81,8 +87,8 @@ const mockAchievements = [
     completed: false,
     progress: 0,
     reward: "1000 OEC",
-    category: "Dedication"
-  }
+    category: "Dedication",
+  },
 ];
 
 // Mock user stats
@@ -92,21 +98,21 @@ const mockUserStats = {
   activePools: 0,
   stakingDays: 0,
   totalValue: 0,
-  monthlyReturn: 0
+  monthlyReturn: 0,
 };
 
 export default function Dashboard() {
   const { isConnected } = useAccount();
-  
+
   if (!isConnected) {
     return (
       <Layout>
-        <div className="flex flex-col items-center justify-center min-h-[60vh] space-y-8">
-          <div className="text-center space-y-4">
-
+        <div className="container mx-auto px-1 sm:px-80 py-1 sm:py-10 space-y-2 sm:space-y-1">
+          <div className="flex flex-col items-center justify-center min-h-[40vh] space-y-8">
+            <div className="text-center space-y-4"></div>
+            <WalletConnect />
+            <WalletSetupGuide />
           </div>
-          <WalletConnect />
-          <WalletSetupGuide />
         </div>
       </Layout>
     );
@@ -115,58 +121,86 @@ export default function Dashboard() {
   return (
     <Layout>
       <div className="container mx-auto px-6 py-8 space-y-8">
-
         {/* User Stats Overview */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-          <Card>
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-2">
+          <Card className="bg-black">
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Total Staked</CardTitle>
+              <CardTitle className="text-sm font-medium">
+                Wallet Balance
+              </CardTitle>
               <DollarSign className="h-4 w-4 text-muted-foreground" />
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold">{mockUserStats.totalStaked.toLocaleString()} OEC</div>
+              <div className="text-2xl font-bold">
+                {mockUserStats.totalStaked.toLocaleString()} OEC
+              </div>
               <p className="text-xs text-muted-foreground">
                 ${(mockUserStats.totalStaked * 0.85).toLocaleString()} USD
               </p>
             </CardContent>
           </Card>
 
-          <Card>
+          <Card className="bg-black">
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Total Rewards</CardTitle>
+              <CardTitle className="text-sm font-medium">
+                Your Total Staked
+              </CardTitle>
+              <DollarSign className="h-4 w-4 text-muted-foreground" />
+            </CardHeader>
+            <CardContent>
+              <div className="text-2xl font-bold">
+                {mockUserStats.totalStaked.toLocaleString()} OEC
+              </div>
+              <p className="text-xs text-muted-foreground">
+                ${(mockUserStats.totalStaked * 0.85).toLocaleString()} USD
+              </p>
+            </CardContent>
+          </Card>
+
+          <Card className="bg-black">
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+              <CardTitle className="text-sm font-medium">
+                Total Rewards
+              </CardTitle>
               <TrendingUp className="h-4 w-4 text-muted-foreground" />
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold">{mockUserStats.totalRewards} OEC</div>
+              <div className="text-2xl font-bold">
+                {mockUserStats.totalRewards} OEC
+              </div>
               <p className="text-xs text-muted-foreground">
                 +{mockUserStats.monthlyReturn}% this month
               </p>
             </CardContent>
           </Card>
 
-          <Card>
+          <Card className="bg-black">
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Active Pools</CardTitle>
+              <CardTitle className="text-sm font-medium">
+                Active Pools
+              </CardTitle>
               <Activity className="h-4 w-4 text-muted-foreground" />
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold">{mockUserStats.activePools}</div>
-              <p className="text-xs text-muted-foreground">
-                Earning rewards
-              </p>
+              <div className="text-2xl font-bold">
+                {mockUserStats.activePools}
+              </div>
+              <p className="text-xs text-muted-foreground">Earning rewards</p>
             </CardContent>
           </Card>
 
-          <Card>
+          <Card className="bg-black">
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Staking Days</CardTitle>
+              <CardTitle className="text-sm font-medium">
+                Staking Days
+              </CardTitle>
               <Clock className="h-4 w-4 text-muted-foreground" />
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold">{mockUserStats.stakingDays}</div>
-              <p className="text-xs text-muted-foreground">
-                Keep going!
-              </p>
+              <div className="text-2xl font-bold">
+                {mockUserStats.stakingDays}
+              </div>
+              <p className="text-xs text-muted-foreground">Keep going!</p>
             </CardContent>
           </Card>
         </div>
@@ -185,24 +219,47 @@ export default function Dashboard() {
           <CardContent>
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
               {mockAchievements.map((achievement) => (
-                <Card key={achievement.id} className={`relative ${achievement.completed ? 'border-green-500/20 bg-green-500/5' : 'border-muted'}`}>
+                <Card
+                  key={achievement.id}
+                  className={`relative ${
+                    achievement.completed
+                      ? "border-green-500/20 bg-green-500/5"
+                      : "border-muted"
+                  }`}
+                >
                   <CardHeader className="pb-3">
                     <div className="flex items-start justify-between">
                       <div className="flex items-center space-x-2">
-                        <achievement.icon className={`w-5 h-5 ${achievement.completed ? 'text-green-500' : 'text-muted-foreground'}`} />
-                        <Badge variant={achievement.completed ? "default" : "secondary"} className="text-xs">
+                        <achievement.icon
+                          className={`w-5 h-5 ${
+                            achievement.completed
+                              ? "text-green-500"
+                              : "text-muted-foreground"
+                          }`}
+                        />
+                        <Badge
+                          variant={
+                            achievement.completed ? "default" : "secondary"
+                          }
+                          className="text-xs"
+                        >
                           {achievement.category}
                         </Badge>
                       </div>
                       {achievement.completed && (
-                        <Badge variant="outline" className="text-green-500 border-green-500">
+                        <Badge
+                          variant="outline"
+                          className="text-green-500 border-green-500"
+                        >
                           Complete
                         </Badge>
                       )}
                     </div>
                     <div>
                       <h3 className="font-semibold">{achievement.title}</h3>
-                      <p className="text-sm text-muted-foreground">{achievement.description}</p>
+                      <p className="text-sm text-muted-foreground">
+                        {achievement.description}
+                      </p>
                     </div>
                   </CardHeader>
                   <CardContent className="pt-0">
@@ -214,7 +271,9 @@ export default function Dashboard() {
                       <Progress value={achievement.progress} className="h-2" />
                       <div className="flex justify-between items-center text-sm">
                         <span className="text-muted-foreground">Reward:</span>
-                        <span className="font-medium text-blue-500">{achievement.reward}</span>
+                        <span className="font-medium text-blue-500">
+                          {achievement.reward}
+                        </span>
                       </div>
                     </div>
                   </CardContent>

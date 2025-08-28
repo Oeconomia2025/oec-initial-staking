@@ -110,7 +110,7 @@ export default function Pools() {
   return (
     <Layout>
       {/* Added mt-4 to create more space between top bar and first card */}
-      <div className="container mx-auto px-4 sm:px-6 py-4 sm:py-5 space-y-2.5 sm:space-y-3 mt-4">
+      <div className="container mx-auto px-4 sm:px-6 py-4 sm:py-5 space-y-2.5 sm:space-y-3 mt-3">
         {/* Wallet Connection Notice */}
         {!isConnected && (
           <Card className="crypto-card p-3 border mb-3 bg-gradient-to-r from-yellow-500/10 to-orange-500/10 border-yellow-500/30">
@@ -228,7 +228,7 @@ export default function Pools() {
                             Min/Max are enforced by contract (if any). Ensure you've approved enough OEC.
                           </p>
 
-                          <Button className="w-full bg-blue-600 hover:bg-blue-700 text-white py-1.5 text-xs sm:text-sm font-semibold">
+                          <Button className="w-full bg-blue-600 hover:bg-blue-900 text-white py-1.5 text-xs sm:text-sm font-semibold">
                             Stake
                           </Button>
                         </div>
@@ -299,7 +299,7 @@ export default function Pools() {
                             Early unstaking may apply penalties (see pool rules).
                           </p>
 
-                          <Button className="w-full bg-blue-600 hover:bg-gray-700 text-white py-1.5 text-xs sm:text-sm font-semibold">
+                          <Button className="w-full bg-blue-600 hover:bg-blue-900 text-white py-1.5 text-xs sm:text-sm font-semibold">
                             Unstake
                           </Button>
                         </div>
@@ -332,7 +332,7 @@ export default function Pools() {
                             <div className="text-xs sm:text-sm text-gray-400">OEC</div>
                             <div className="text-[0.6rem] sm:text-xs text-gray-500">Available Rewards</div>
                             
-                            <Button className="w-full bg-green-600 hover:bg-green-700 text-white py-1.5 text-xs sm:text-sm font-semibold">
+                            <Button className="w-full bg-green-600 hover:bg-green-900 text-white py-1.5 text-xs sm:text-sm font-semibold">
                               Claim Rewards
                             </Button>
                           </div>
