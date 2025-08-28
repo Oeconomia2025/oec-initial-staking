@@ -124,7 +124,7 @@ export default function ROICalculator() {
                   value={calcAmount}
                   onChange={(e) => setCalcAmount(e.target.value)}
                   placeholder="Enter amount to stake"
-                  className="bg-black/30 border-white/20"
+                  className="bg-black border-white/20"
                 />
               </div>
               
@@ -138,7 +138,7 @@ export default function ROICalculator() {
                   value={calcDays}
                   onChange={(e) => setCalcDays(e.target.value)}
                   placeholder="Enter staking period"
-                  className="bg-black/30 border-white/20"
+                  className="bg-black border-white/20"
                 />
                 <div className="flex gap-2 mt-2">
                   {[30, 60, 90, 180].map((days) => (
@@ -147,7 +147,7 @@ export default function ROICalculator() {
                       variant="outline"
                       size="sm"
                       onClick={() => setCalcDays(days.toString())}
-                      className="text-xs bg-black/20 border-white/20 hover:bg-white/10"
+                      className="text-xs bg-black border-white/20 hover:bg-white/10"
                     >
                       {days}d
                     </Button>
@@ -169,7 +169,7 @@ export default function ROICalculator() {
                       className={`text-xs ${
                         selectedPool.id === pool.id
                           ? 'bg-crypto-blue hover:bg-crypto-blue/80'
-                          : 'bg-black/20 border-white/20 hover:bg-white/10'
+                          : 'bg-black border-white/20 hover:bg-white/10'
                       }`}
                     >
                       {pool.apy}% APY
@@ -183,7 +183,7 @@ export default function ROICalculator() {
             
             {/* ROI Results */}
             <div className="space-y-4">
-              <div className="bg-black/30 p-4 rounded-lg border border-white/10">
+              <div className="bg-black p-4 rounded-lg border border-white/10">
                 <h3 className="text-lg font-semibold mb-4 flex items-center">
                   <BarChart3 className="w-5 h-5 mr-2 text-crypto-green" />
                   ROI Breakdown
@@ -209,7 +209,7 @@ export default function ROICalculator() {
                 </div>
               </div>
               
-              <div className="bg-black/30 p-4 rounded-lg border border-white/10">
+              <div className="bg-black p-4 rounded-lg border border-white/10">
                 <h3 className="text-lg font-semibold mb-4">Earning Breakdown</h3>
                 
                 <div className="space-y-3">

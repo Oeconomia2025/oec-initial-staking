@@ -182,7 +182,7 @@ export function Layout({
           } transition-all duration-300 ease-in-out lg:translate-x-0 lg:static lg:inset-0 flex flex-col shadow-xl shadow-black/70`}
         >
           {/* Sidebar header */}
-          <div className="sticky top-0 z-10 bg-gray-950 flex items-center justify-between h-20 px-4 border-b border-gray-700">
+          <div className="sticky top-0 z-10 bg-gray-950 flex items-center justify-between h-20 px-4 border-b-0">
             <div className={`flex items-center ${sidebarCollapsed ? "justify-center w-full" : "space-x-3"}`}>
               <div className="w-8 h-8 rounded-full overflow-hidden flex-shrink-0">
                 <img src="/oec-logo.png" alt="Oeconomia Logo" className="w-full h-full object-cover" />
@@ -205,7 +205,7 @@ export function Layout({
           </div>
 
           {/* Sidebar nav */}
-          <div className="sticky top-20 bg-gray-950 z-10 border-b border-gray-700">
+          <div className="sticky top-20 bg-gray-950 z-10 border-b-0">
             <nav className="p-4">
               <ul className="space-y-2">
                 {sidebarItems.map((item, i) => (
@@ -240,7 +240,7 @@ export function Layout({
           <div className="flex-1 overflow-y-auto p-4" />
 
           {/* Bottom alert */}
-          <div className="sticky bottom-0 bg-gray-950 p-4 border-t border-gray-700 flex justify-center">
+          <div className="sticky bottom-0 bg-gray-950 p-4 border-t-0 flex justify-center">
             <WalletConnect />
           </div>
         </aside>
@@ -253,7 +253,7 @@ export function Layout({
         {/* === MAIN COLUMN: header + page content (stacked) === */}
         <div className="flex-1 lg:ml-0 relative flex flex-col">
           {/* Header */}
-          <header className="sticky top-0 z-30 bg-gray-950 border-b border-gray-700 px-6 h-20 flex items-center shadow-xl shadow-black/70">
+          <header className="sticky top-0 z-30 bg-gray-950 border-b-0 px-6 h-20 flex items-center shadow-xl shadow-black/70">
             <div className="flex items-center justify-between w-full">
               {/* Left side: burger + title */}
               <div className="flex items-center space-x-4">
@@ -378,7 +378,7 @@ export function Layout({
           {/* Page content + footer */}
           <main className="flex-1">
             {children}
-            <footer className="border-t border-gray-700 mt-8 py-6 px-6 text-center">
+            <footer className="border-t-0 mt-8 py-6 px-6 text-center">
               <p className="text-sm text-muted-foreground">© 2025 Oeconomia. All rights reserved.</p>
             </footer>
           </main>
