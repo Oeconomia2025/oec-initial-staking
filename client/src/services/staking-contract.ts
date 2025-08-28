@@ -47,15 +47,20 @@ export interface StakingContractService {
 }
 
 export class ViemStakingContractService implements StakingContractService {
-  private publicClient: PublicClient;
-  private walletClient: WalletClient;
+  private publicClient: PublicClient | null;
+  private walletClient: WalletClient | null;
   
-  constructor(publicClient: PublicClient, walletClient: WalletClient) {
+  constructor(publicClient: PublicClient | null, walletClient: WalletClient | null) {
     this.publicClient = publicClient;
     this.walletClient = walletClient;
   }
   
   async getPoolInfo(poolId: number): Promise<StakingPoolInfo> {
+    // If we don't have a public client, return mock data
+    if (!this.publicClient) {
+      return new MockStakingContractService().getPoolInfo(poolId);
+    }
+    
     const result = await this.publicClient.readContract({
       address: CONTRACT_ADDRESS,
       abi: MultiPoolStakingAPRABI,
@@ -75,6 +80,11 @@ export class ViemStakingContractService implements StakingContractService {
   }
   
   async balanceOf(poolId: number, account: Address): Promise<bigint> {
+    // If we don't have a public client, return mock data
+    if (!this.publicClient) {
+      return new MockStakingContractService().balanceOf(poolId, account);
+    }
+    
     const result = await this.publicClient.readContract({
       address: CONTRACT_ADDRESS,
       abi: MultiPoolStakingAPRABI,
@@ -85,6 +95,11 @@ export class ViemStakingContractService implements StakingContractService {
   }
   
   async earned(poolId: number, account: Address): Promise<bigint> {
+    // If we don't have a public client, return mock data
+    if (!this.publicClient) {
+      return new MockStakingContractService().earned(poolId, account);
+    }
+    
     const result = await this.publicClient.readContract({
       address: CONTRACT_ADDRESS,
       abi: MultiPoolStakingAPRABI,
@@ -95,6 +110,11 @@ export class ViemStakingContractService implements StakingContractService {
   }
   
   async rewardPerToken(poolId: number): Promise<bigint> {
+    // If we don't have a public client, return mock data
+    if (!this.publicClient) {
+      return new MockStakingContractService().rewardPerToken(poolId);
+    }
+    
     const result = await this.publicClient.readContract({
       address: CONTRACT_ADDRESS,
       abi: MultiPoolStakingAPRABI,
@@ -105,6 +125,11 @@ export class ViemStakingContractService implements StakingContractService {
   }
   
   async stake(poolId: number, amount: bigint): Promise<void> {
+    // If we don't have a wallet client, use mock
+    if (!this.walletClient || !this.publicClient) {
+      return new MockStakingContractService().stake(poolId, amount);
+    }
+    
     const [account] = await this.walletClient.getAddresses();
     
     const { request } = await this.publicClient.simulateContract({
@@ -119,6 +144,11 @@ export class ViemStakingContractService implements StakingContractService {
   }
   
   async withdraw(poolId: number, amount: bigint): Promise<void> {
+    // If we don't have a wallet client, use mock
+    if (!this.walletClient || !this.publicClient) {
+      return new MockStakingContractService().withdraw(poolId, amount);
+    }
+    
     const [account] = await this.walletClient.getAddresses();
     
     const { request } = await this.publicClient.simulateContract({
@@ -133,6 +163,11 @@ export class ViemStakingContractService implements StakingContractService {
   }
   
   async earlyWithdraw(poolId: number, amount: bigint): Promise<void> {
+    // If we don't have a wallet client, use mock
+    if (!this.walletClient || !this.publicClient) {
+      return new MockStakingContractService().earlyWithdraw(poolId, amount);
+    }
+    
     const [account] = await this.walletClient.getAddresses();
     
     const { request } = await this.publicClient.simulateContract({
@@ -147,6 +182,11 @@ export class ViemStakingContractService implements StakingContractService {
   }
   
   async getReward(poolId: number): Promise<void> {
+    // If we don't have a wallet client, use mock
+    if (!this.walletClient || !this.publicClient) {
+      return new MockStakingContractService().getReward(poolId);
+    }
+    
     const [account] = await this.walletClient.getAddresses();
     
     const { request } = await this.publicClient.simulateContract({
@@ -161,6 +201,11 @@ export class ViemStakingContractService implements StakingContractService {
   }
   
   async exit(poolId: number): Promise<void> {
+    // If we don't have a wallet client, use mock
+    if (!this.walletClient || !this.publicClient) {
+      return new MockStakingContractService().exit(poolId);
+    }
+    
     const [account] = await this.walletClient.getAddresses();
     
     const { request } = await this.publicClient.simulateContract({
@@ -175,6 +220,11 @@ export class ViemStakingContractService implements StakingContractService {
   }
   
   async emergencyWithdraw(poolId: number): Promise<void> {
+    // If we don't have a wallet client, use mock
+    if (!this.walletClient || !this.publicClient) {
+      return new MockStakingContractService().emergencyWithdraw(poolId);
+    }
+    
     const [account] = await this.walletClient.getAddresses();
     
     const { request } = await this.publicClient.simulateContract({
