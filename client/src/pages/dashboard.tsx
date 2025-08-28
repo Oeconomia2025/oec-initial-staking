@@ -28,8 +28,8 @@ const mockAchievements = [
     title: "First Stake",
     description: "Complete your first staking transaction",
     icon: Star,
-    completed: true,
-    progress: 100,
+    completed: false,
+    progress: 0,
     reward: "5 OEC",
     category: "Beginner"
   },
@@ -38,8 +38,8 @@ const mockAchievements = [
     title: "Diamond Hands",
     description: "Hold staked tokens for 30 days",
     icon: Crown,
-    completed: true,
-    progress: 100,
+    completed: false,
+    progress: 0,
     reward: "50 OEC",
     category: "Loyalty"
   },
@@ -49,7 +49,7 @@ const mockAchievements = [
     description: "Stake in 3 different pools",
     icon: Trophy,
     completed: false,
-    progress: 66,
+    progress: 0,
     reward: "100 OEC",
     category: "Explorer"
   },
@@ -59,7 +59,7 @@ const mockAchievements = [
     description: "Stake over 10,000 OEC tokens",
     icon: Medal,
     completed: false,
-    progress: 25,
+    progress: 0,
     reward: "500 OEC",
     category: "Whale"
   },
@@ -69,7 +69,7 @@ const mockAchievements = [
     description: "Compound rewards 10 times",
     icon: Zap,
     completed: false,
-    progress: 40,
+    progress: 0,
     reward: "200 OEC",
     category: "Strategy"
   },
@@ -79,7 +79,7 @@ const mockAchievements = [
     description: "Keep tokens staked for 90 days",
     icon: Target,
     completed: false,
-    progress: 15,
+    progress: 0,
     reward: "1000 OEC",
     category: "Dedication"
   }
@@ -87,12 +87,12 @@ const mockAchievements = [
 
 // Mock user stats
 const mockUserStats = {
-  totalStaked: 4000,
-  totalRewards: 23.95,
-  activePools: 2,
-  stakingDays: 45,
-  totalValue: 4023.95,
-  monthlyReturn: 5.2
+  totalStaked: 0,
+  totalRewards: 0,
+  activePools: 0,
+  stakingDays: 0,
+  totalValue: 0,
+  monthlyReturn: 0
 };
 
 export default function Dashboard() {
@@ -115,14 +115,6 @@ export default function Dashboard() {
   return (
     <Layout>
       <div className="container mx-auto px-6 py-8 space-y-8">
-        <div className="space-y-2">
-          <h1 className="text-4xl font-bold bg-gradient-to-r from-blue-400 to-purple-600 bg-clip-text text-transparent">
-            Staking Dashboard
-          </h1>
-          <p className="text-xl text-muted-foreground">
-            Track your staking performance and unlock achievements
-          </p>
-        </div>
 
         {/* User Stats Overview */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">

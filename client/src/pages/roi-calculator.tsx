@@ -17,10 +17,10 @@ import { useAccount } from "wagmi";
 
 // Mock data - matches original staking page design
 const mockStakingPools = [
-  { id: 1, name: "Flexible Staking", lockPeriod: "Flexible", apy: 12.5 },
-  { id: 2, name: "30-Day Lock", lockPeriod: "30 Days", apy: 18.0 },
-  { id: 3, name: "60-Day Lock", lockPeriod: "60 Days", apy: 22.5 },
-  { id: 4, name: "90-Day Lock", lockPeriod: "90 Days", apy: 28.0 }
+  { id: 1, name: "Flexible Staking", lockPeriod: "Flexible", apy: 15 },
+  { id: 2, name: "30-Day Lock", lockPeriod: "30 Days", apy: 25 },
+  { id: 3, name: "60-Day Lock", lockPeriod: "60 Days", apy: 40 },
+  { id: 4, name: "90-Day Lock", lockPeriod: "90 Days", apy: 60 }
 ];
 
 export default function ROICalculator() {
@@ -63,14 +63,7 @@ export default function ROICalculator() {
   return (
     <Layout>
       <div className="container mx-auto px-6 py-8 space-y-8">
-        <div className="space-y-2">
-          <h1 className="text-4xl font-bold bg-gradient-to-r from-blue-400 to-purple-600 bg-clip-text text-transparent">
-            Interactive ROI Calculator
-          </h1>
-          <p className="text-xl text-muted-foreground">
-            Calculate your potential staking rewards and optimize your strategy
-          </p>
-        </div>
+
 
         {/* Wallet Connection Notice */}
         {!isConnected && (
@@ -144,7 +137,7 @@ export default function ROICalculator() {
                   className="bg-black/30 border-white/20"
                 />
                 <div className="flex gap-2 mt-2">
-                  {[30, 90, 180, 365].map((days) => (
+                  {[30, 60, 90, 180].map((days) => (
                     <Button
                       key={days}
                       variant="outline"

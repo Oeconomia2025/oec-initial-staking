@@ -25,8 +25,8 @@ const stakingPools = [
     lockDays: 0,
     minStake: 100,
     maxStake: null,
-    totalStaked: 2500000,
-    participants: 1250,
+    totalStaked: 0,
+    participants: 0,
     description: "Stake and unstake anytime with no lock period",
     featured: false,
     gradient: "from-cyan-500 to-blue-600"
@@ -39,8 +39,8 @@ const stakingPools = [
     lockDays: 30,
     minStake: 500,
     maxStake: null,
-    totalStaked: 1800000,
-    participants: 890,
+    totalStaked: 0,
+    participants: 0,
     description: "Higher rewards with 30-day commitment",
     featured: true,
     gradient: "from-cyan-500 to-teal-600"
@@ -53,8 +53,8 @@ const stakingPools = [
     lockDays: 60,
     minStake: 1000,
     maxStake: null,
-    totalStaked: 3200000,
-    participants: 1580,
+    totalStaked: 0,
+    participants: 0,
     description: "Premium returns for 60-day staking",
     featured: true,
     gradient: "from-purple-500 to-pink-600"
@@ -66,9 +66,9 @@ const stakingPools = [
     lockPeriod: "90 Days",
     lockDays: 90,
     minStake: 2000,
-    maxStake: 100000,
-    totalStaked: 4500000,
-    participants: 780,
+    maxStake: 0,
+    totalStaked: 0,
+    participants: 0,
     description: "Maximum APY with 90-day lock period",
     featured: false,
     gradient: "from-purple-600 to-purple-800"
@@ -157,7 +157,7 @@ export default function Pools() {
                       <Badge className="bg-white/20 text-white border-white/30 mb-0.5 text-[0.6rem] sm:text-xs">
                         {pool.apy}% APY
                       </Badge>
-                      <div className="text-[0.6rem] sm:text-xs opacity-90">0 DDB</div>
+                      <div className="text-[0.6rem] sm:text-xs opacity-90">0 OEC</div>
                     </div>
                     {expandedPool === pool.id ? (
                       <ChevronUp className="w-3 h-3 sm:w-4 sm:h-4" />
@@ -198,7 +198,7 @@ export default function Pools() {
 
                     {/* Stake Tab Content */}
                     {activeTab[pool.id] === 'Stake' && (
-                      <div className="grid grid-cols-1 lg:grid-cols-2 gap-2">
+                      <div className="grid grid-cols-1 lg:grid-cols-2 gap-2 min-h-[175px]">
                         <div className="space-y-2">
                           <h4 className="text-sm font-semibold">Amount to Stake</h4>
                           
@@ -225,7 +225,7 @@ export default function Pools() {
                           </div>
 
                           <p className="text-[0.6rem] text-gray-400">
-                            Min/Max are enforced by contract (if any). Ensure you've approved enough DDB.
+                            Min/Max are enforced by contract (if any). Ensure you've approved enough OEC.
                           </p>
 
                           <Button className="w-full bg-blue-600 hover:bg-blue-700 text-white py-1.5 text-xs sm:text-sm font-semibold">
@@ -233,15 +233,15 @@ export default function Pools() {
                           </Button>
                         </div>
 
-                        <div className="space-y-2">
+                        <div className="space-y-1">
                           <div className="bg-gray-800/50 rounded-md p-2 sm:p-3 space-y-2">
                             <div className="flex justify-between items-start">
                               <span className="text-gray-400 text-[0.6rem] sm:text-xs">Estimated Daily Rewards:</span>
-                              <span className="font-semibold text-green-400 text-[0.6rem] sm:text-xs">0.00 DDB</span>
+                              <span className="font-semibold text-green-400 text-[0.6rem] sm:text-xs">0.00 OEC</span>
                             </div>
                             <div className="flex justify-between items-start">
                               <span className="text-gray-400 text-[0.6rem] sm:text-xs">Estimated Monthly Rewards:</span>
-                              <span className="font-semibold text-green-400 text-[0.6rem] sm:text-xs">0.00 DDB</span>
+                              <span className="font-semibold text-green-400 text-[0.6rem] sm:text-xs">0.00 OEC</span>
                             </div>
                             <div className="flex justify-between items-start">
                               <span className="text-gray-400 text-[0.6rem] sm:text-xs">Lock Period:</span>
@@ -249,7 +249,7 @@ export default function Pools() {
                             </div>
                           </div>
 
-                          <div className="space-y-1 text-[0.6rem] sm:text-xs">
+                          <div className="space-y-1 text-[0.6rem] sm:p-3 sm:text-xs">
                             <div className="flex justify-between">
                               <span className="text-gray-400">Min Stake:</span>
                               <span>{formatNumber(pool.minStake)} OEC</span>
@@ -269,7 +269,7 @@ export default function Pools() {
 
                     {/* Unstake Tab Content */}
                     {activeTab[pool.id] === 'Unstake' && (
-                      <div className="grid grid-cols-1 lg:grid-cols-2 gap-2">
+                      <div className="grid grid-cols-1 lg:grid-cols-2 gap-2 min-h-[175px]">
                         <div className="space-y-2">
                           <h4 className="text-sm font-semibold">Amount to Unstake</h4>
                           
@@ -308,11 +308,11 @@ export default function Pools() {
                           <div className="bg-gray-800/50 rounded-md p-2 sm:p-3 space-y-2">
                             <div className="flex justify-between items-start">
                               <span className="text-gray-400 text-[0.6rem] sm:text-xs">Estimated Daily Rewards:</span>
-                              <span className="font-semibold text-green-400 text-[0.6rem] sm:text-xs">0.00 DDB</span>
+                              <span className="font-semibold text-green-400 text-[0.6rem] sm:text-xs">0.00 OEC</span>
                             </div>
                             <div className="flex justify-between items-start">
                               <span className="text-gray-400 text-[0.6rem] sm:text-xs">Estimated Monthly Rewards:</span>
-                              <span className="font-semibold text-green-400 text-[0.6rem] sm:text-xs">0.00 DDB</span>
+                              <span className="font-semibold text-green-400 text-[0.6rem] sm:text-xs">0.00 OEC</span>
                             </div>
                             <div className="flex justify-between items-start">
                               <span className="text-gray-400 text-[0.6rem] sm:text-xs">Lock Period:</span>
@@ -325,11 +325,11 @@ export default function Pools() {
 
                     {/* Rewards Tab Content */}
                     {activeTab[pool.id] === 'Rewards' && (
-                      <div className="grid grid-cols-1 lg:grid-cols-2 gap-2">
-                        <div className="space-y-2">
+                      <div className="grid grid-cols-1 lg:grid-cols-2 gap-2 min-h-[175px]">
+                        <div className="space-y-2 flex flex-col justify-center">
                           <div className="text-center space-y-2">
                             <div className="text-2xl sm:text-4xl font-bold text-green-400">0.00</div>
-                            <div className="text-xs sm:text-sm text-gray-400">DDB</div>
+                            <div className="text-xs sm:text-sm text-gray-400">OEC</div>
                             <div className="text-[0.6rem] sm:text-xs text-gray-500">Available Rewards</div>
                             
                             <Button className="w-full bg-green-600 hover:bg-green-700 text-white py-1.5 text-xs sm:text-sm font-semibold">
@@ -342,7 +342,7 @@ export default function Pools() {
                           <div className="bg-gray-800/50 rounded-md p-2 sm:p-3 space-y-2">
                             <div className="flex justify-between items-start">
                               <span className="text-gray-400 text-[0.6rem] sm:text-xs">Total Earned:</span>
-                              <span className="font-semibold text-[0.6rem] sm:text-xs">0.00 DDB</span>
+                              <span className="font-semibold text-[0.6rem] sm:text-xs">0.00 OEC</span>
                             </div>
                             <div className="flex justify-between items-start">
                               <span className="text-gray-400 text-[0.6rem] sm:text-xs">Next Reward:</span>
