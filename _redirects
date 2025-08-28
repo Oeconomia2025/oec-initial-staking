@@ -1,0 +1,5 @@
+# Handle client-side routing
+/*    /index.html   200
+
+# API routes to serverless functions
+/api/*  /.netlify/functions/:splat  200

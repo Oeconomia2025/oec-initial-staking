@@ -109,7 +109,7 @@ export default function Pools() {
 
   return (
     <Layout>
-      <div className="container mx-auto px-4 sm:px-6 py-2 sm:py-3 space-y-2 sm:space-y-3">
+      <div className="container mx-auto px-4 sm:px-6 py-4 sm:py-5 space-y-2.5 sm:space-y-3 mt-1.5 sm:mt-2">
         {/* Wallet Connection Notice */}
         {!isConnected && (
           <Card className="crypto-card p-3 border mb-3 bg-gradient-to-r from-yellow-500/10 to-orange-500/10 border-yellow-500/30">
@@ -189,10 +189,10 @@ export default function Pools() {
                         ))}
                       </div>
                       <div className="flex flex-col sm:flex-row gap-1 sm:space-x-1">
-                        <Button variant="outline" size="xs" className="border-red-500 text-red-400 hover:bg-red-500/10 text-[0.6rem] sm:text-xs">
+                        <Button variant="outline" size="sm" className="border-red-500 text-red-400 hover:bg-red-500/10 text-[0.6rem] sm:text-xs h-7">
                           Early Withdraw
                         </Button>
-                        <Button variant="outline" size="xs" className="border-gray-500 text-gray-300 hover:bg-gray-500/10 text-[0.6rem] sm:text-xs">
+                        <Button variant="outline" size="sm" className="border-gray-500 text-gray-300 hover:bg-gray-500/10 text-[0.6rem] sm:text-xs h-7">
                           Exit (Withdraw + Claim)
                         </Button>
                       </div>
