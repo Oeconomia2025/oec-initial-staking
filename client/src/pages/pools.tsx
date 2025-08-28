@@ -14,6 +14,7 @@ import {
 } from "lucide-react";
 import { WalletConnect } from "@/components/wallet-connect";
 import { useAccount } from "wagmi";
+import { MockStakingContractService, StakingContractService } from "@/services/staking-contract";
 
 // Mock data for staking pools
 const stakingPools = [
@@ -80,6 +81,9 @@ export default function Pools() {
   const [expandedPool, setExpandedPool] = useState<number | null>(null);
   const [activeTab, setActiveTab] = useState<{ [key: number]: string }>({});
   const [stakeAmount, setStakeAmount] = useState<{ [key: number]: string }>({});
+  
+  // Initialize the staking contract service
+  const stakingService: StakingContractService = new MockStakingContractService();
 
   const formatNumber = (num: number) => {
     if (num >= 1000000) return `${(num / 1000000).toFixed(1)}M`;
@@ -105,6 +109,75 @@ export default function Pools() {
   const getPercentageAmount = (poolId: number, percentage: number) => {
     const amount = stakeAmount[poolId] ? parseFloat(stakeAmount[poolId]) : 0;
     return (amount * percentage / 100).toString();
+  };
+
+  // Handle staking action
+  const handleStake = async (poolId: number) => {
+    if (!stakeAmount[poolId]) return;
+    
+    try {
+      const amount = BigInt(Math.floor(parseFloat(stakeAmount[poolId]) * 1e18)); // Convert to wei
+      await stakingService.stake(poolId, amount);
+      // Reset the input after successful stake
+      setStakeAmount(prev => ({ ...prev, [poolId]: '' }));
+    } catch (error) {
+      console.error("Staking error:", error);
+    }
+  };
+
+  // Handle withdraw action
+  const handleWithdraw = async (poolId: number) => {
+    if (!stakeAmount[poolId]) return;
+    
+    try {
+      const amount = BigInt(Math.floor(parseFloat(stakeAmount[poolId]) * 1e18)); // Convert to wei
+      await stakingService.withdraw(poolId, amount);
+      // Reset the input after successful withdraw
+      setStakeAmount(prev => ({ ...prev, [poolId]: '' }));
+    } catch (error) {
+      console.error("Withdraw error:", error);
+    }
+  };
+
+  // Handle early withdraw action
+  const handleEarlyWithdraw = async (poolId: number) => {
+    if (!stakeAmount[poolId]) return;
+    
+    try {
+      const amount = BigInt(Math.floor(parseFloat(stakeAmount[poolId]) * 1e18)); // Convert to wei
+      await stakingService.earlyWithdraw(poolId, amount);
+      // Reset the input after successful early withdraw
+      setStakeAmount(prev => ({ ...prev, [poolId]: '' }));
+    } catch (error) {
+      console.error("Early withdraw error:", error);
+    }
+  };
+
+  // Handle claim rewards action
+  const handleClaimRewards = async (poolId: number) => {
+    try {
+      await stakingService.getReward(poolId);
+    } catch (error) {
+      console.error("Claim rewards error:", error);
+    }
+  };
+
+  // Handle exit action
+  const handleExit = async (poolId: number) => {
+    try {
+      await stakingService.exit(poolId);
+    } catch (error) {
+      console.error("Exit error:", error);
+    }
+  };
+
+  // Handle emergency withdraw action
+  const handleEmergencyWithdraw = async (poolId: number) => {
+    try {
+      await stakingService.emergencyWithdraw(poolId);
+    } catch (error) {
+      console.error("Emergency withdraw error:", error);
+    }
   };
 
   return (
@@ -189,10 +262,20 @@ export default function Pools() {
                         ))}
                       </div>
                       <div className="flex flex-col sm:flex-row gap-1 sm:space-x-1">
-                        <Button variant="outline" size="sm" className="border-red-500 text-red-400 hover:bg-red-500/10 text-[0.6rem] sm:text-xs h-7">
-                          Early Withdraw
+                        <Button 
+                          variant="outline" 
+                          size="sm" 
+                          className="border-red-500 text-red-400 hover:bg-red-500/10 text-[0.6rem] sm:text-xs h-7"
+                          onClick={() => handleEmergencyWithdraw(pool.id)}
+                        >
+                          Emergency Withdraw
                         </Button>
-                        <Button variant="outline" size="sm" className="border-gray-500 text-gray-300 hover:bg-gray-500/10 text-[0.6rem] sm:text-xs h-7">
+                        <Button 
+                          variant="outline" 
+                          size="sm" 
+                          className="border-gray-500 text-gray-300 hover:bg-gray-500/10 text-[0.6rem] sm:text-xs h-7"
+                          onClick={() => handleExit(pool.id)}
+                        >
                           Exit (Withdraw + Claim)
                         </Button>
                       </div>
@@ -232,7 +315,10 @@ export default function Pools() {
                             Min/Max are enforced by contract (if any). Ensure you've approved enough DDB.
                           </p>
 
-                          <Button className="w-full bg-blue-600 hover:bg-blue-700 text-white py-1.5 text-xs sm:text-sm font-semibold">
+                          <Button 
+                            className="w-full bg-blue-600 hover:bg-blue-700 text-white py-1.5 text-xs sm:text-sm font-semibold"
+                            onClick={() => handleStake(pool.id)}
+                          >
                             Stake
                           </Button>
                         </div>
@@ -300,13 +386,24 @@ export default function Pools() {
                             ))}
                           </div>
 
+                          <div className="flex space-x-1 mt-2">
+                            <Button 
+                              className="flex-1 bg-gray-600 hover:bg-gray-700 text-white py-1.5 text-xs sm:text-sm font-semibold"
+                              onClick={() => handleWithdraw(pool.id)}
+                            >
+                              Withdraw
+                            </Button>
+                            <Button 
+                              className="flex-1 bg-red-600 hover:bg-red-700 text-white py-1.5 text-xs sm:text-sm font-semibold"
+                              onClick={() => handleEarlyWithdraw(pool.id)}
+                            >
+                              Early Withdraw
+                            </Button>
+                          </div>
+
                           <p className="text-[0.6rem] text-gray-400">
                             Early unstaking may apply penalties (see pool rules).
                           </p>
-
-                          <Button className="w-full bg-gray-600 hover:bg-gray-700 text-white py-1.5 text-xs sm:text-sm font-semibold">
-                            Unstake
-                          </Button>
                         </div>
 
                         <div className="space-y-2">
@@ -337,7 +434,10 @@ export default function Pools() {
                             <div className="text-xs sm:text-sm text-gray-400">DDB</div>
                             <div className="text-[0.6rem] sm:text-xs text-gray-500">Available Rewards</div>
                             
-                            <Button className="w-full bg-green-600 hover:bg-green-700 text-white py-1.5 text-xs sm:text-sm font-semibold">
+                            <Button 
+                              className="w-full bg-green-600 hover:bg-green-700 text-white py-1.5 text-xs sm:text-sm font-semibold"
+                              onClick={() => handleClaimRewards(pool.id)}
+                            >
                               Claim Rewards
                             </Button>
                           </div>
