@@ -173,7 +173,7 @@ export default function Pools() {
                   <div className="p-2 sm:p-3 space-y-2">
                     {/* Navigation Tabs and Action Buttons */}
                     <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
-                      <div className="flex bg-gray-800 rounded-md p-0.5 w-full sm:w-auto">
+                      <div className="flex bg-gray-800 rounded-md p-0.5 w-full sm:w-1/2">
                         {['Stake', 'Unstake', 'Rewards'].map((tab) => (
                           <button
                             key={tab}
