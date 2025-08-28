@@ -190,7 +190,7 @@ export default function Pools() {
                         ))}
                       </div>
                       <div className="flex flex-col sm:flex-row gap-1 sm:space-x-1">
-                        <Button variant="outline" size="sm" className="bg-red-500 text-white-400 hover:bg-red-500/10 text-[0.6rem] sm:text-xs h-7">
+                        <Button variant="outline" size="sm" className="bg-red-900 text-white-400 hover:bg-red-500/10 text-[0.6rem] sm:text-xs h-7">
                           Early Withdraw
                         </Button>
                       </div>
@@ -208,7 +208,7 @@ export default function Pools() {
                               placeholder="0"
                               value={stakeAmount[pool.id] || ''}
                               onChange={(e) => handleStakeAmountChange(pool.id, e.target.value)}
-                              className="w-full bg-black border border-gray-600 rounded-md p-2 text-sm sm:text-base text-white placeholder-gray-400 focus:border-blue-500 focus:outline-none"
+                              className="w-full bg-black border border-slate-700 rounded-md p-2 text-sm sm:text-base text-white placeholder-gray-400 focus:border-blue-500 focus:outline-none"
                             />
                           </div>
 
@@ -217,7 +217,7 @@ export default function Pools() {
                               <button
                                 key={percentage}
                                 onClick={() => handleStakeAmountChange(pool.id, getPercentageAmount(pool.id, percentage))}
-                                className="py-1 px-1 sm:px-2 bg-gray-700 hover:bg-gray-600 rounded text-[0.6rem] sm:text-xs font-medium transition-colors"
+                                className="py-1 px-1 sm:px-2 bg-black hover:bg-gray-600 rounded text-[0.6rem] sm:text-xs font-medium transition-colors"
                               >
                                 {percentage === 100 ? 'Max' : `${percentage}%`}
                               </button>
@@ -288,7 +288,7 @@ export default function Pools() {
                               <button
                                 key={percentage}
                                 onClick={() => handleStakeAmountChange(pool.id, getPercentageAmount(pool.id, percentage))}
-                                className="py-1 px-1 sm:px-2 bg-gray-700 hover:bg-gray-600 rounded text-[0.6rem] sm:text-xs font-medium transition-colors"
+                                className="py-1 px-1 sm:px-2 bg-black hover:bg-gray-600 rounded text-[0.6rem] sm:text-xs font-medium transition-colors"
                               >
                                 {percentage === 100 ? 'Max' : `${percentage}%`}
                               </button>
@@ -299,7 +299,7 @@ export default function Pools() {
                             Early unstaking may apply penalties (see pool rules).
                           </p>
 
-                          <Button className="w-full bg-gray-600 hover:bg-gray-700 text-white py-1.5 text-xs sm:text-sm font-semibold">
+                          <Button className="w-full bg-blue-600 hover:bg-gray-700 text-white py-1.5 text-xs sm:text-sm font-semibold">
                             Unstake
                           </Button>
                         </div>
@@ -327,7 +327,7 @@ export default function Pools() {
                     {activeTab[pool.id] === 'Rewards' && (
                       <div className="grid grid-cols-1 lg:grid-cols-2 gap-2 min-h-[175px]">
                         <div className="space-y-2 flex flex-col justify-center">
-                          <div className="text-center space-y-2">
+                          <div className="text-center space-y-3 mt-4">
                             <div className="text-2xl sm:text-4xl font-bold text-green-400">0.00</div>
                             <div className="text-xs sm:text-sm text-gray-400">OEC</div>
                             <div className="text-[0.6rem] sm:text-xs text-gray-500">Available Rewards</div>
