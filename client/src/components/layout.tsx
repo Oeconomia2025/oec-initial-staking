@@ -253,7 +253,7 @@ export function Layout({
               <div className="absolute inset-0 rounded-lg bg-gradient-to-r from-purple-500 via-blue-500 to-cyan-500
                 p-0.5 group-hover:opacity-90 transition-opacity duration-300"></div>
               {/* Button content */}
-              <div className="flex items-center justify-center w-full bg-gray-950 rounded-md py-1.5">
+              <div className="flex items-center justify-center w-full bg-transparent rounded-md py-1.5">
                 <img
                   src="https://pub-37d61a7eb7ae45898b46702664710cb2.r2.dev/images/OEC%20Logo%20Square.png"
                   alt="Oeconomia Logo"
