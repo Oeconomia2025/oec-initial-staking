@@ -190,7 +190,6 @@ export function Layout({
               {!sidebarCollapsed && (
                 <div>
                   <h2 className="text-lg font-bold">Oeconomia</h2>
-                  <p className="text-xs text-gray-400">OEC Staking</p>
                 </div>
               )}
             </div>
@@ -242,26 +241,31 @@ export function Layout({
           {/* Bottom alert */}
           <div className="sticky bottom-0 bg-gray-950 p-4 border-t-0 flex flex-col items-center space-y-3">
             {/* Oeconomia Button */}
-            <a
-              href="https://oeconomia.io/"
-              target="_blank"
-              rel="noopener noreferrer"
-              className="flex items-center justify-center w-full max-w-[160px] py-2 px-3 rounded-lg bg-transparent
-                relative overflow-hidden group"
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => window.open('https://oeconomia.io/', '_blank')}
+              className={`w-full flex items-center ${
+                sidebarCollapsed ? "justify-center px-2" : "space-x-3 px-3"
+              } py-2 rounded-lg text-left transition-colors group relative bg-transparent text-white hover:bg-white/5 transition-all duration-200 focus:outline-none focus:ring-0 focus:ring-offset-0 focus-visible:ring-0 border-2 border-transparent bg-gradient-to-r from-purple-500 via-blue-500 to-cyan-500 bg-clip-border`}
+              style={{
+                borderRadius: '5px',
+                background: 'linear-gradient(var(--background), var(--background)) padding-box, linear-gradient(45deg, #a855f7, #3b82f6, #06b6d4) border-box'
+              }}
+              title={sidebarCollapsed ? "Oeconomia" : undefined}
             >
-              {/* Gradient border using pseudo-element */}
-              <div className="absolute inset-0 rounded-lg bg-gradient-to-r from-purple-500 via-blue-500 to-cyan-500
-                p-0.5 group-hover:opacity-90 transition-opacity duration-300"></div>
-              {/* Button content */}
-              <div className="flex items-center justify-center w-full bg-transparent rounded-md py-1.5">
-                <img
-                  src="https://pub-37d61a7eb7ae45898b46702664710cb2.r2.dev/images/OEC%20Logo%20Square.png"
-                  alt="Oeconomia Logo"
-                  className="w-5 h-5 mr-2"
-                />
-                <span className="text-sm font-medium text-white">Oeconomia</span>
-              </div>
-            </a>
+              <img
+                src="https://pub-37d61a7eb7ae45898b46702664710cb2.r2.dev/images/OEC%20Logo%20Square.png"
+                alt="OEC Logo"
+                className="w-5 h-5 flex-shrink-0"
+              />
+              {!sidebarCollapsed && <span className="ml-2">Oeconomia</span>}
+              {sidebarCollapsed && (
+                <div className="absolute left-full ml-2 px-2 py-1 bg-[var(--crypto-dark)] text-white text-sm rounded opacity-0 group-hover:opacity-100 transition-opacity duration-200 pointer-events-none whitespace-nowrap z-50">
+                  Oeconomia
+                </div>
+              )}
+            </Button>
             <WalletConnect />
           </div>
         </aside>
