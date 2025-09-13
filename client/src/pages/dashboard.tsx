@@ -35,7 +35,7 @@ const mockAchievements = [
     description: "Complete your first staking transaction",
     icon: Star,
     completed: true,
-    progress: 100,
+    progress: 0,
     reward: "5 OEC",
     category: "Beginner",
   },
