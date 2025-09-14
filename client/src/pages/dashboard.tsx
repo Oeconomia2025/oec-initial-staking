@@ -34,7 +34,7 @@ const mockAchievements = [
     title: "First Stake",
     description: "Complete your first staking transaction",
     icon: Star,
-    completed: true,
+    completed: false,
     progress: 0,
     reward: "5 OEC",
     category: "Beginner",
@@ -128,12 +128,12 @@ export default function Dashboard() {
         <div className="space-y-8">
           {/* User Stats Overview */}
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-2">
-            <Card className="bg-black">
+            <Card className="bg-gradient-to-r from-cyan-500/10 to-blue-600/10 border border-cyan-500/20">
               <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                 <CardTitle className="text-sm font-medium">
                   Wallet Balance
                 </CardTitle>
-                <DollarSign className="h-4 w-4 text-muted-foreground" />
+                <DollarSign className="h-4 w-4 text-cyan-400" />
               </CardHeader>
               <CardContent>
                 <div className="text-2xl font-bold">
@@ -145,12 +145,12 @@ export default function Dashboard() {
               </CardContent>
             </Card>
 
-            <Card className="bg-black">
+            <Card className="bg-gradient-to-r from-cyan-500/10 to-teal-600/10 border border-cyan-500/20">
               <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                 <CardTitle className="text-sm font-medium">
                   Your Total Staked
                 </CardTitle>
-                <DollarSign className="h-4 w-4 text-muted-foreground" />
+                <DollarSign className="h-4 w-4 text-cyan-400" />
               </CardHeader>
               <CardContent>
                 <div className="text-2xl font-bold">
@@ -162,12 +162,12 @@ export default function Dashboard() {
               </CardContent>
             </Card>
 
-            <Card className="bg-black">
+            <Card className="bg-gradient-to-r from-purple-500/10 to-pink-600/10 border border-purple-500/20">
               <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                 <CardTitle className="text-sm font-medium">
                   Total Rewards
                 </CardTitle>
-                <TrendingUp className="h-4 w-4 text-muted-foreground" />
+                <TrendingUp className="h-4 w-4 text-purple-400" />
               </CardHeader>
               <CardContent>
                 <div className="text-2xl font-bold">
@@ -179,12 +179,12 @@ export default function Dashboard() {
               </CardContent>
             </Card>
 
-            <Card className="bg-black">
+            <Card className="bg-gradient-to-r from-purple-600/10 to-purple-800/10 border border-purple-500/20">
               <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                 <CardTitle className="text-sm font-medium">
                   Active Pools
                 </CardTitle>
-                <Activity className="h-4 w-4 text-muted-foreground" />
+                <Activity className="h-4 w-4 text-purple-400" />
               </CardHeader>
               <CardContent>
                 <div className="text-2xl font-bold">
@@ -196,12 +196,12 @@ export default function Dashboard() {
               </CardContent>
             </Card>
 
-            <Card className="bg-black">
+            <Card className="bg-gradient-to-r from-cyan-500/10 to-blue-600/10 border border-cyan-500/20">
               <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                 <CardTitle className="text-sm font-medium">
                   Staking Days
                 </CardTitle>
-                <Clock className="h-4 w-4 text-muted-foreground" />
+                <Clock className="h-4 w-4 text-cyan-400" />
               </CardHeader>
               <CardContent>
                 <div className="text-2xl font-bold">
