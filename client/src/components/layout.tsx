@@ -245,7 +245,7 @@ export function Layout({
               variant="ghost"
               size="sm"
               onClick={() => window.open('https://oeconomia.io/', '_blank')}
-              className={`w-full flex items-center ${
+              className={`w-full flex items-left ${
                 sidebarCollapsed ? "justify-left px-1" : "space-x-3 px-3"
               } py-2 rounded-lg text-left transition-colors group relative bg-transparent text-white hover:bg-white/5 transition-all duration-200 focus:outline-none focus:ring-0 focus:ring-offset-0 focus-visible:ring-0 border-2 border-transparent bg-gradient-to-r from-purple-500 via-blue-500 to-cyan-500 bg-clip-border`}
               style={{
