@@ -158,15 +158,15 @@ export function Layout({
       <div className="min-h-screen bg-background text-foreground flex">
         {/* Sidebar */}
         <aside
-          className={fixed inset-y-0 left-0 z-50 ${
+          className={`fixed inset-y-0 left-0 z-50 ${
             sidebarCollapsed ? "w-16" : "w-48"
           } bg-gray-950 border-r border-gray-700 transform ${
             sidebarOpen ? "translate-x-0" : "-translate-x-full"
-          } transition-all duration-300 ease-in-out lg:translate-x-0 lg:static lg:inset-0 flex flex-col shadow-xl shadow-black/70}
+          } transition-all duration-300 ease-in-out lg:translate-x-0 lg:static lg:inset-0 flex flex-col shadow-xl shadow-black/70`}
         >
           {/* Sidebar header */}
           <div className="sticky top-0 z-10 bg-gray-950 flex items-center justify-between h-20 px-4 border-b-0">
-            <div className=flex items-center ${sidebarCollapsed ? "justify-center w-full" : "space-x-3"}}>
+            <div className=`flex items-center ${sidebarCollapsed ? "justify-center w-full" : "space-x-3"}`}>
               <div className="w-8 h-8 rounded-full overflow-hidden flex-shrink-0">
                 <img src="/oec-logo.png" alt="Oeconomia Logo" className="w-full h-full object-cover" />
               </div>
@@ -193,16 +193,14 @@ export function Layout({
                   <li key={i}>
                     <button
                       onClick={() => handleNavigation(item.path)}
-                      className={w-full flex items-center ${
+                      className={`w-full flex items-center ${
                         sidebarCollapsed ? "justify-center px-2" : "space-x-3 px-3"
                       } py-2 rounded-lg text-left transition-colors group relative ${
                         item.active
                           ? "text-white font-medium shadow-lg transition-all duration-200"
                           : "text-muted-foreground hover:text-foreground hover:bg-muted"
-                      }}
-                      style={item.active ? { background: "linear-gradient(45deg, 
-#00d4ff, 
-#ff00ff)" } : {}}
+                      }`}
+                      style={item.active ? { background: "linear-gradient(45deg, #00d4ff, #ff00ff)" } : {}}
                       title={sidebarCollapsed ? item.label : undefined}
                     >
                       <item.icon className="w-5 h-5 flex-shrink-0" />
@@ -227,15 +225,12 @@ export function Layout({
               variant="ghost"
               size="sm"
               onClick={() => window.open('https://oeconomia.io/', '_blank')}
-              className={w-full flex items-left ${
+              className={`w-full flex items-left ${
                 sidebarCollapsed ? "justify-left px-1" : "space-x-3 px-3"
-              } py-2 rounded-lg text-left transition-colors group relative bg-transparent text-white hover:bg-white/5 transition-all duration-200 focus:outline-none focus:ring-0 focus:ring-offset-0 focus-visible:ring-0 border-2 border-transparent bg-gradient-to-r from-purple-500 via-blue-500 to-cyan-500 bg-clip-border}
+              } py-2 rounded-lg text-left transition-colors group relative bg-transparent text-white hover:bg-white/5 transition-all duration-200 focus:outline-none focus:ring-0 focus:ring-offset-0 focus-visible:ring-0 border-2 border-transparent bg-gradient-to-r from-purple-500 via-blue-500 to-cyan-500 bg-clip-border`}
               style={{
                 borderRadius: '5px',
-                background: 'linear-gradient(var(--background), var(--background)) padding-box, linear-gradient(45deg, 
-#a855f7, 
-#3b82f6, 
-#06b6d4) border-box'
+                background: 'linear-gradient(var(--background), var(--background)) padding-box, linear-gradient(45deg, #a855f7, #3b82f6, #06b6d4) border-box'
               }}
               title={sidebarCollapsed ? "Oeconomia" : undefined}
             >
@@ -286,7 +281,7 @@ export function Layout({
                         <div className="flex items-center space-x-2">
                           <h1 className="text-xl font-semibold text-white">{tokenTicker}</h1>
                           {(tokenWebsite || pageWebsite) && (
-
+                            
                               href={tokenWebsite || pageWebsite}
                               target="_blank"
                               rel="noopener noreferrer"
@@ -304,7 +299,7 @@ export function Layout({
                         <div className="flex items-center space-x-2">
                           <h1 className="text-xl font-semibold text-white">{currentPageInfo.title}</h1>
                           {(tokenWebsite || pageWebsite) && (
-
+                            
                               href={tokenWebsite || pageWebsite}
                               target="_blank"
                               rel="noopener noreferrer"
@@ -364,9 +359,9 @@ export function Layout({
                       <DropdownMenuItem
                         key={link.name}
                         onClick={() => link.enabled && window.open(link.url, "_blank")}
-                        className={cursor-pointer hover:bg-gradient-to-r hover:from-cyan-500/20 hover:to-purple-600/20 transition-all duration-200 ${
+                        className={`cursor-pointer hover:bg-gradient-to-r hover:from-cyan-500/20 hover:to-purple-600/20 transition-all duration-200 ${
                           !link.enabled ? "opacity-50" : ""
-                        }}
+                        }`}
                         disabled={!link.enabled}
                       >
                         <link.icon className="w-4 h-4 mr-2" />
@@ -440,11 +435,11 @@ export function Layout({
                       <div className="flex items-center gap-4">
                         <span className="text-gray-400 font-medium min-w-[120px]">EVM Networks:</span>
                         <div
-                          className={font-mono text-xs p-2 rounded break-all cursor-pointer transition-all duration-300 flex-1 ${
+                          className={`font-mono text-xs p-2 rounded break-all cursor-pointer transition-all duration-300 flex-1 ${
                             copiedAddress === "evm"
                               ? "bg-green-500/30 border border-green-500/50 text-green-300"
                               : "bg-black/30 hover:bg-black/50"
-                          }}
+                          }`}
                           onClick={() => {
                             navigator.clipboard.writeText("0xD02dbe54454F6FE3c2F9F1F096C5460284E418Ed");
                             setCopiedAddress("evm");
@@ -461,11 +456,11 @@ export function Layout({
                       <div className="flex items-center gap-4">
                         <span className="text-gray-400 font-medium min-w-[120px]">Solana:</span>
                         <div
-                          className={font-mono text-xs p-2 rounded break-all cursor-pointer transition-all duration-300 flex-1 ${
+                          className={`font-mono text-xs p-2 rounded break-all cursor-pointer transition-all duration-300 flex-1 ${
                             copiedAddress === "sol"
                               ? "bg-green-500/30 border border-green-500/50 text-green-300"
                               : "bg-black/30 hover:bg-black/50"
-                          }}
+                          }`}
                           onClick={() => {
                             navigator.clipboard.writeText("HkJhW2X9xYw9n4sp3e9BBh33Np6iNghpU7gtDJ5ATqYx");
                             setCopiedAddress("sol");
@@ -482,11 +477,11 @@ export function Layout({
                       <div className="flex items-center gap-4">
                         <span className="text-gray-400 font-medium min-w-[120px]">Sui Network:</span>
                         <div
-                          className={font-mono text-xs p-2 rounded break-all cursor-pointer transition-all duration-300 flex-1 ${
+                          className={`font-mono text-xs p-2 rounded break-all cursor-pointer transition-all duration-300 flex-1 ${
                             copiedAddress === "sui"
                               ? "bg-green-500/30 border border-green-500/50 text-green-300"
                               : "bg-black/30 hover:bg-black/50"
-                          }}
+                          }`}
                           onClick={() => {
                             navigator.clipboard.writeText(
                               "0xef000226f93506df5a3b1eaaae7835e919ff69c18d4929ed1537d656fb324dfe"
@@ -507,11 +502,11 @@ export function Layout({
                       <div className="flex items-center gap-4">
                         <span className="text-gray-400 font-medium min-w-[120px]">Bitcoin:</span>
                         <div
-                          className={font-mono text-xs p-2 rounded break-all cursor-pointer transition-all duration-300 flex-1 ${
+                          className={`font-mono text-xs p-2 rounded break-all cursor-pointer transition-all duration-300 flex-1 ${
                             copiedAddress === "btc"
                               ? "bg-green-500/30 border border-green-500/50 text-green-300"
                               : "bg-black/30 hover:bg-black/50"
-                          }}
+                          }`}
                           onClick={() => {
                             navigator.clipboard.writeText("bc1qwtzdtx6ghfzy065wmv3xfk8tyqqr2w87tnrx9r");
                             setCopiedAddress("btc");
@@ -528,11 +523,11 @@ export function Layout({
                       <div className="flex items-center gap-4">
                         <span className="text-gray-400 font-medium min-w-[120px]">CashApp:</span>
                         <div
-                          className={font-mono text-xs p-2 rounded break-all cursor-pointer transition-all duration-300 flex-1 ${
+                          className={`font-mono text-xs p-2 rounded break-all cursor-pointer transition-all duration-300 flex-1 ${
                             copiedAddress === "cashapp"
                               ? "bg-green-500/30 border border-green-500/50 text-green-300"
                               : "bg-black/30 hover:bg-black/50"
-                          }}
+                          }`}
                           onClick={() => {
                             navigator.clipboard.writeText("$oooJASONooo");
                             setCopiedAddress("cashapp");
