@@ -9,7 +9,6 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { Card } from "@/components/ui/card";
 import { WalletConnect } from "@/components/wallet-connect";
-
 // Icons (trimmed to only those used here)
 import {
   BarChart3,
@@ -23,6 +22,7 @@ import {
   Globe,
   AlertTriangle,
   Heart,
+  Wallet, // Added Wallet icon
 } from "lucide-react";
 import { SiX, SiMedium, SiYoutube, SiDiscord, SiGithub, SiTelegram } from "react-icons/si";
 
@@ -78,14 +78,12 @@ export function Layout({
     }
     return false;
   });
-
   const [disclaimerOpen, setDisclaimerOpen] = useState(false);
   const [supportOpen, setSupportOpen] = useState(false);
   const [copiedAddress, setCopiedAddress] = useState<string | null>(null);
   const [donationStep, setDonationStep] = useState<"addresses" | "thankyou">("addresses");
   const [selectedDonationType, setSelectedDonationType] = useState<string>("");
   const [donorName, setDonorName] = useState("");
-
   const [location, navigate] = useLocation();
   const isNavigatingRef = useRef(false);
   const lockedCollapsedStateRef = useRef<boolean | null>(null);
@@ -137,14 +135,12 @@ export function Layout({
 
   const handleNavigation = (path: string) => {
     const wasCollapsed = sidebarCollapsed;
-
     // Mobile: simple
     if (typeof window !== "undefined" && window.innerWidth < 1024) {
       navigate(path);
       setSidebarOpen(false);
       return;
     }
-
     // Desktop: lock sidebar state during navigation
     lockedCollapsedStateRef.current = wasCollapsed;
     isNavigatingRef.current = true;
@@ -211,18 +207,20 @@ export function Layout({
                   <li key={i}>
                     <button
                       onClick={() => handleNavigation(item.path)}
-                      className={`w-full flex items-center ${
-                        sidebarCollapsed ? "justify-center px-2" : "space-x-3 px-3"
-                      } py-2 rounded-lg text-left transition-colors group relative ${
+                      className={`w-full flex items-center justify-center ${
+                        sidebarCollapsed ? "aspect-square p-2" : "aspect-square p-3"
+                      } rounded-lg transition-colors group relative ${
                         item.active
                           ? "text-white font-medium shadow-lg transition-all duration-200"
                           : "text-muted-foreground hover:text-foreground hover:bg-muted"
                       }`}
-                      style={item.active ? { background: "linear-gradient(45deg, #00d4ff, #ff00ff)" } : {}}
+                      style={item.active ? { background: "linear-gradient(135deg, #a855f7, #3b82f6, #06b6d4)" } : {}}
                       title={sidebarCollapsed ? item.label : undefined}
                     >
-                      <item.icon className="w-5 h-5 flex-shrink-0" />
-                      {!sidebarCollapsed && <span>{item.label}</span>}
+                      <div className="flex flex-col items-center justify-center w-full h-full">
+                        <item.icon className={`${sidebarCollapsed ? "w-5 h-5" : "w-6 h-6"} flex-shrink-0`} />
+                        {!sidebarCollapsed && <span className="text-xs mt-1">{item.label}</span>}
+                      </div>
                       {sidebarCollapsed && (
                         <div className="absolute left-full ml-2 px-2 py-1 bg-[var(--crypto-dark)] text-white text-sm rounded opacity-0 group-hover:opacity-100 transition-opacity duration-200 pointer-events-none whitespace-nowrap z-50">
                           {item.label}
@@ -238,35 +236,61 @@ export function Layout({
           {/* Fill space */}
           <div className="flex-1 overflow-y-auto p-4" />
 
-          {/* Bottom alert */}
-          <div className="sticky bottom-0 bg-gray-950 p-4 border-t-0 flex flex-col items-center space-y-3">
+          {/* Bottom buttons */}
+          <div className="sticky bottom-0 bg-gray-950 p-2 border-t-0 flex flex-col items-center space-y-2">
             {/* Oeconomia Button */}
             <Button
               variant="ghost"
               size="sm"
               onClick={() => window.open('https://oeconomia.io/', '_blank')}
-              className={`w-full flex items-left ${
-                sidebarCollapsed ? "justify-left px-1" : "space-x-3 px-3"
-              } py-2 rounded-lg text-left transition-colors group relative bg-transparent text-white hover:bg-white/5 transition-all duration-200 focus:outline-none focus:ring-0 focus:ring-offset-0 focus-visible:ring-0 border-2 border-transparent bg-gradient-to-r from-purple-500 via-blue-500 to-cyan-500 bg-clip-border`}
+              className={`w-full flex items-center justify-center ${
+                sidebarCollapsed ? "aspect-square p-2" : "aspect-square p-3"
+              } rounded-lg transition-colors group relative bg-transparent text-white hover:bg-white/5 transition-all duration-200 focus:outline-none focus:ring-0 focus:ring-offset-0 focus-visible:ring-0 border-2 border-transparent bg-gradient-to-r from-purple-500 via-blue-500 to-cyan-500 bg-clip-border`}
               style={{
-                borderRadius: '5px',
-                background: 'linear-gradient(var(--background), var(--background)) padding-box, linear-gradient(45deg, #a855f7, #3b82f6, #06b6d4) border-box'
+                borderRadius: '8px',
+                background: 'linear-gradient(var(--background), var(--background)) padding-box, linear-gradient(135deg, #a855f7, #3b82f6, #06b6d4) border-box'
               }}
               title={sidebarCollapsed ? "Oeconomia" : undefined}
             >
-              <img
-                src="https://pub-37d61a7eb7ae45898b46702664710cb2.r2.dev/images/OEC%20Logo%20Square.png"
-                alt="OEC Logo"
-                className="w-5 h-5 flex-shrink-0"
-              />
-              {!sidebarCollapsed && <span className="ml-2">Oeconomia</span>}
+              <div className="flex flex-col items-center justify-center w-full h-full">
+                <img
+                  src="https://pub-37d61a7eb7ae45898b46702664710cb2.r2.dev/images/OEC%20Logo%20Square.png"
+                  alt="OEC Logo"
+                  className={`${sidebarCollapsed ? "w-5 h-5" : "w-6 h-6"} flex-shrink-0`}
+                />
+                {!sidebarCollapsed && <span className="text-xs mt-1">Oeconomia</span>}
+              </div>
               {sidebarCollapsed && (
                 <div className="absolute left-full ml-2 px-2 py-1 bg-[var(--crypto-dark)] text-white text-sm rounded opacity-0 group-hover:opacity-100 transition-opacity duration-200 pointer-events-none whitespace-nowrap z-50">
                   Oeconomia
                 </div>
               )}
             </Button>
-            <WalletConnect />
+
+            {/* Wallet Connect Button - Modified for collapsed state */}
+            {sidebarCollapsed ? (
+              <div className="w-full group relative">
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  className="w-full aspect-square p-2 rounded-lg transition-colors bg-transparent text-white hover:bg-white/5 transition-all duration-200 focus:outline-none focus:ring-0 focus:ring-offset-0 focus-visible:ring-0 border-2 border-transparent bg-gradient-to-r from-purple-500 via-blue-500 to-cyan-500 bg-clip-border flex items-center justify-center"
+                  style={{
+                    borderRadius: '8px',
+                    background: 'linear-gradient(var(--background), var(--background)) padding-box, linear-gradient(135deg, #a855f7, #3b82f6, #06b6d4) border-box'
+                  }}
+                  title="Connect Wallet"
+                >
+                  <Wallet className="w-5 h-5" />
+                </Button>
+                <div className="absolute left-full ml-2 px-2 py-1 bg-[var(--crypto-dark)] text-white text-sm rounded opacity-0 group-hover:opacity-100 transition-opacity duration-200 pointer-events-none whitespace-nowrap z-50 top-1/2 -translate-y-1/2">
+                  Connect Wallet
+                </div>
+              </div>
+            ) : (
+              <div className="w-full">
+                <WalletConnect />
+              </div>
+            )}
           </div>
         </aside>
 
@@ -285,7 +309,6 @@ export function Layout({
                 <Button variant="ghost" size="sm" onClick={() => setSidebarOpen(true)} className="lg:hidden">
                   <Menu className="w-5 h-5" />
                 </Button>
-
                 <div className="flex items-center space-x-3">
                   {(tokenLogo || pageLogo) && (
                     <img
@@ -298,7 +321,6 @@ export function Layout({
                       }}
                     />
                   )}
-
                   <div className="flex flex-col">
                     {tokenTicker && tokenName ? (
                       <div>
@@ -360,7 +382,6 @@ export function Layout({
                     TVL: $0
                   </div>
                 </div>
-
                 {/* Social menu */}
                 <DropdownMenu>
                   <DropdownMenuTrigger asChild>
@@ -411,8 +432,6 @@ export function Layout({
         {/* === END MAIN COLUMN === */}
       </div>
 
-      {/* Disclaimer Modal - REMOVED */}
-
       {/* Support Modal */}
       {supportOpen && (
         <div
@@ -436,7 +455,6 @@ export function Layout({
             >
               <X className="w-5 h-5" />
             </button>
-
             {donationStep === "addresses" ? (
               <div className="animate-in fade-in duration-500">
                 <div className="flex items-center space-x-3 mb-4">
@@ -448,7 +466,6 @@ export function Layout({
                     <p className="text-sm text-gray-400">Help Oeconomia Grow</p>
                   </div>
                 </div>
-
                 <div className="space-y-4 mb-6">
                   <p className="text-gray-300">
                     Your support helps fund essential infrastructure including servers, databases, APIs, and
@@ -459,10 +476,8 @@ export function Layout({
                     Additionally, upcoming marketing initiatives will help expand the Oeconomia ecosystem and
                     reach new users. Every contribution directly supports continued development and innovation.
                   </p>
-
                   <div className="bg-gradient-to-r from-cyan-500/10 to-purple-600/10 border border-cyan-500/30 rounded-lg p-4 space-y-3">
                     <h3 className="text-sm font-semibold text-cyan-400 mb-2">Donation Addresses (Click to Copy):</h3>
-
                     <div className="space-y-3 text-sm">
                       {/* EVM */}
                       <div className="flex items-center gap-4">
@@ -485,7 +500,6 @@ export function Layout({
                           {copiedAddress === "evm" ? "✓ Copied!" : "0xD02dbe54454F6FE3c2F9F1F096C5460284E418Ed"}
                         </div>
                       </div>
-
                       {/* SOL */}
                       <div className="flex items-center gap-4">
                         <span className="text-gray-400 font-medium min-w-[120px]">Solana:</span>
@@ -507,7 +521,6 @@ export function Layout({
                           {copiedAddress === "sol" ? "✓ Copied!" : "HkJhW2X9xYw9n4sp3e9BBh33Np6iNghpU7gtDJ5ATqYx"}
                         </div>
                       </div>
-
                       {/* SUI */}
                       <div className="flex items-center gap-4">
                         <span className="text-gray-400 font-medium min-w-[120px]">Sui Network:</span>
@@ -533,7 +546,6 @@ export function Layout({
                             : "0xef000226f93506df5a3b1eaaae7835e919ff69c18d4929ed1537d656fb324dfe"}
                         </div>
                       </div>
-
                       {/* BTC */}
                       <div className="flex items-center gap-4">
                         <span className="text-gray-400 font-medium min-w-[120px]">Bitcoin:</span>
@@ -555,7 +567,6 @@ export function Layout({
                           {copiedAddress === "btc" ? "✓ Copied!" : "bc1qwtzdtx6ghfzy065wmv3xfk8tyqqr2w87tnrx9r"}
                         </div>
                       </div>
-
                       {/* CashApp */}
                       <div className="flex items-center gap-4">
                         <span className="text-gray-400 font-medium min-w-[120px]">CashApp:</span>
@@ -579,7 +590,6 @@ export function Layout({
                       </div>
                     </div>
                   </div>
-
                   <div className="bg-green-500/10 border border-green-500/30 rounded-lg p-3">
                     <p className="text-sm text-green-400">
                       <strong>Thank you for your support!</strong> Every contribution is deeply appreciated and
@@ -588,7 +598,6 @@ export function Layout({
                     </p>
                   </div>
                 </div>
-
                 <Button
                   onClick={() => setSupportOpen(false)}
                   className="w-full bg-gradient-to-r from-cyan-500 to-purple-600 hover:from-cyan-600 hover:to-purple-700 text-white"
@@ -607,7 +616,6 @@ export function Layout({
                     <div className="absolute -top-2 -right-2 w-4 h-4 bg-yellow-400 rounded-full animate-ping"></div>
                     <div className="absolute -bottom-1 -left-1 w-3 h-3 bg-cyan-400 rounded-full animate-ping" style={{ animationDelay: "0.5s" }}></div>
                   </div>
-
                   <div className="space-y-3">
                     <h2
                       className="text-2xl font-bold bg-gradient-to-r from-pink-400 to-purple-400 bg-clip-text text-transparent animate-in slide-in-from-bottom duration-500"
@@ -622,7 +630,6 @@ export function Layout({
                       Your {selectedDonationType} donation address has been copied
                     </p>
                   </div>
-
                   <div
                     className="bg-gradient-to-r from-purple-500/10 to-pink-500/10 border border-purple-500/30 rounded-lg p-4 space-y-3 animate-in slide-in-from-bottom duration-500"
                     style={{ animationDelay: "0.6s" }}
@@ -635,7 +642,6 @@ export function Layout({
                       <li>• Community growth initiatives</li>
                     </ul>
                   </div>
-
                   <div className="space-y-3 animate-in slide-in-from-bottom duration-500" style={{ animationDelay: "0.8s" }}>
                     <p className="text-sm text-gray-400">Want a personal thank you message? (Optional)</p>
                     <input
@@ -646,7 +652,6 @@ export function Layout({
                       className="w-full px-3 py-2 bg-black/30 border border-gray-600 rounded-lg text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-purple-500"
                     />
                   </div>
-
                   {donorName && (
                     <div className="bg-gradient-to-r from-green-500/10 to-emerald-500/10 border border-green-500/30 rounded-lg p-3 animate-in slide-in-from-bottom duration-500">
                       <p className="text-green-400">
@@ -657,7 +662,6 @@ export function Layout({
                       </p>
                     </div>
                   )}
-
                   <div className="flex gap-3 animate-in slide-in-from-bottom duration-500" style={{ animationDelay: "1s" }}>
                     <Button
                       onClick={() => {
