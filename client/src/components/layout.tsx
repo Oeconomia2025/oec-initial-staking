@@ -278,7 +278,7 @@ export function Layout({
         {/* === MAIN COLUMN: header + page content (stacked) === */}
         <div className="flex-1 lg:ml-0 relative flex flex-col">
           {/* Header */}
-          <header className="sticky top-0 z-30 bg-gray-950 border-b-0 px-6 h-20 flex items-center shadow-xl shadow-black/70">
+          <header className="sticky top-0 z-30 bg-gray-950 border-b-0 px-2 h-20 flex items-center shadow-xl shadow-black/70">
             <div className="flex items-center justify-between w-full">
               {/* Left side: burger + title */}
               <div className="flex items-center space-x-4">
