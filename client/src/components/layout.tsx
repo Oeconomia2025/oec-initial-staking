@@ -9,6 +9,7 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { Card } from "@/components/ui/card";
 import { WalletConnect } from "@/components/wallet-connect";
+
 // Icons (trimmed to only those used here)
 import {
   BarChart3,
@@ -24,6 +25,7 @@ import {
   Heart,
 } from "lucide-react";
 import { SiX, SiMedium, SiYoutube, SiDiscord, SiGithub, SiTelegram } from "react-icons/si";
+
 interface LayoutProps {
   children: ReactNode;
   pageTitle?: string;
@@ -36,6 +38,7 @@ interface LayoutProps {
   tokenTicker?: string;
   tokenName?: string;
 }
+
 // Route-based page info
 const pageInfo = {
   "/": {
@@ -55,6 +58,7 @@ const pageInfo = {
     description: "Calculate your potential staking rewards and strategize",
   },
 } as const;
+
 export function Layout({
   children,
   pageTitle,
@@ -74,15 +78,18 @@ export function Layout({
     }
     return false;
   });
+
   const [disclaimerOpen, setDisclaimerOpen] = useState(false);
   const [supportOpen, setSupportOpen] = useState(false);
   const [copiedAddress, setCopiedAddress] = useState<string | null>(null);
   const [donationStep, setDonationStep] = useState<"addresses" | "thankyou">("addresses");
   const [selectedDonationType, setSelectedDonationType] = useState<string>("");
   const [donorName, setDonorName] = useState("");
+
   const [location, navigate] = useLocation();
   const isNavigatingRef = useRef(false);
   const lockedCollapsedStateRef = useRef<boolean | null>(null);
+
   // Social links
   const socialLinks = [
     { name: "Twitter/X", icon: SiX, url: "https://x.com/Oeconomia2025", enabled: true },
@@ -92,16 +99,19 @@ export function Layout({
     { name: "GitHub", icon: SiGithub, url: "https://github.com/Oeconomia2025", enabled: true },
     { name: "Telegram", icon: SiTelegram, url: "https://t.me/OeconomiaDAO", enabled: true },
   ];
+
   // Merge explicit props with route defaults
   const routePageInfo = pageInfo[location as keyof typeof pageInfo] || pageInfo["/"];
   const currentPageInfo = {
     title: pageTitle || routePageInfo.title,
     description: pageDescription || routePageInfo.description,
   };
+
   // Persist collapsed state
   useEffect(() => {
     localStorage.setItem("sidebar-collapsed", sidebarCollapsed.toString());
   }, [sidebarCollapsed]);
+
   // Enforce locked collapse state during navigation
   useEffect(() => {
     if (lockedCollapsedStateRef.current !== null && sidebarCollapsed !== lockedCollapsedStateRef.current) {
@@ -114,6 +124,7 @@ export function Layout({
       }, 0);
     }
   }, [sidebarCollapsed]);
+
   // Unlock after navigation completes
   useEffect(() => {
     if (isNavigatingRef.current) {
@@ -123,14 +134,17 @@ export function Layout({
       }, 100);
     }
   }, [location]);
+
   const handleNavigation = (path: string) => {
     const wasCollapsed = sidebarCollapsed;
+
     // Mobile: simple
     if (typeof window !== "undefined" && window.innerWidth < 1024) {
       navigate(path);
       setSidebarOpen(false);
       return;
     }
+
     // Desktop: lock sidebar state during navigation
     lockedCollapsedStateRef.current = wasCollapsed;
     isNavigatingRef.current = true;
@@ -141,17 +155,20 @@ export function Layout({
       localStorage.setItem("sidebar-collapsed", String(wasCollapsed));
     }, 1);
   };
+
   const toggleCollapsed = () => {
     isNavigatingRef.current = false;
     const next = !sidebarCollapsed;
     setSidebarCollapsed(next);
     localStorage.setItem("sidebar-collapsed", String(next));
   };
+
   const sidebarItems = [
     { icon: BarChart3, label: "Dashboard", path: "/", active: location === "/" || location === "/dashboard" },
     { icon: Lock, label: "Staking Pools", path: "/pools", active: location === "/pools" },
     { icon: Calculator, label: "ROI Calc", path: "/calculator", active: location === "/calculator" },
   ];
+
   return (
     <>
       {/* Root: sidebar + main column in the SAME flex row */}
@@ -166,7 +183,7 @@ export function Layout({
         >
           {/* Sidebar header */}
           <div className="sticky top-0 z-10 bg-gray-950 flex items-center justify-between h-20 px-4 border-b-0">
-            <div className=`flex items-center ${sidebarCollapsed ? "justify-center w-full" : "space-x-3"}`}>
+            <div className={`flex items-center ${sidebarCollapsed ? "justify-center w-full" : "space-x-3"}`}>
               <div className="w-8 h-8 rounded-full overflow-hidden flex-shrink-0">
                 <img src="/oec-logo.png" alt="Oeconomia Logo" className="w-full h-full object-cover" />
               </div>
@@ -185,6 +202,7 @@ export function Layout({
               </Button>
             </div>
           </div>
+
           {/* Sidebar nav */}
           <div className="sticky top-20 bg-gray-950 z-10 border-b-0">
             <nav className="p-2">
@@ -216,8 +234,10 @@ export function Layout({
               </ul>
             </nav>
           </div>
+
           {/* Fill space */}
           <div className="flex-1 overflow-y-auto p-4" />
+
           {/* Bottom alert */}
           <div className="sticky bottom-0 bg-gray-950 p-4 border-t-0 flex flex-col items-center space-y-3">
             {/* Oeconomia Button */}
@@ -249,10 +269,12 @@ export function Layout({
             <WalletConnect />
           </div>
         </aside>
+
         {/* Mobile overlay */}
         {sidebarOpen && (
           <div className="fixed inset-0 bg-black/50 z-40 lg:hidden" onClick={() => setSidebarOpen(false)} />
         )}
+
         {/* === MAIN COLUMN: header + page content (stacked) === */}
         <div className="flex-1 lg:ml-0 relative flex flex-col">
           {/* Header */}
@@ -263,6 +285,7 @@ export function Layout({
                 <Button variant="ghost" size="sm" onClick={() => setSidebarOpen(true)} className="lg:hidden">
                   <Menu className="w-5 h-5" />
                 </Button>
+
                 <div className="flex items-center space-x-3">
                   {(tokenLogo || pageLogo) && (
                     <img
@@ -275,13 +298,14 @@ export function Layout({
                       }}
                     />
                   )}
+
                   <div className="flex flex-col">
                     {tokenTicker && tokenName ? (
                       <div>
                         <div className="flex items-center space-x-2">
                           <h1 className="text-xl font-semibold text-white">{tokenTicker}</h1>
                           {(tokenWebsite || pageWebsite) && (
-                            
+                            <a
                               href={tokenWebsite || pageWebsite}
                               target="_blank"
                               rel="noopener noreferrer"
@@ -299,7 +323,7 @@ export function Layout({
                         <div className="flex items-center space-x-2">
                           <h1 className="text-xl font-semibold text-white">{currentPageInfo.title}</h1>
                           {(tokenWebsite || pageWebsite) && (
-                            
+                            <a
                               href={tokenWebsite || pageWebsite}
                               target="_blank"
                               rel="noopener noreferrer"
@@ -318,6 +342,7 @@ export function Layout({
                   </div>
                 </div>
               </div>
+
               {/* Right side: pills + socials */}
               <div className="flex items-center space-x-4">
                 {/* Stats pills */}
@@ -335,6 +360,7 @@ export function Layout({
                     TVL: $0
                   </div>
                 </div>
+
                 {/* Social menu */}
                 <DropdownMenu>
                   <DropdownMenuTrigger asChild>
@@ -373,6 +399,7 @@ export function Layout({
               </div>
             </div>
           </header>
+
           {/* Page content + footer */}
           <main className="flex-1">
             {children}
@@ -383,7 +410,9 @@ export function Layout({
         </div>
         {/* === END MAIN COLUMN === */}
       </div>
+
       {/* Disclaimer Modal - REMOVED */}
+
       {/* Support Modal */}
       {supportOpen && (
         <div
@@ -407,6 +436,7 @@ export function Layout({
             >
               <X className="w-5 h-5" />
             </button>
+
             {donationStep === "addresses" ? (
               <div className="animate-in fade-in duration-500">
                 <div className="flex items-center space-x-3 mb-4">
@@ -418,6 +448,7 @@ export function Layout({
                     <p className="text-sm text-gray-400">Help Oeconomia Grow</p>
                   </div>
                 </div>
+
                 <div className="space-y-4 mb-6">
                   <p className="text-gray-300">
                     Your support helps fund essential infrastructure including servers, databases, APIs, and
@@ -428,8 +459,10 @@ export function Layout({
                     Additionally, upcoming marketing initiatives will help expand the Oeconomia ecosystem and
                     reach new users. Every contribution directly supports continued development and innovation.
                   </p>
+
                   <div className="bg-gradient-to-r from-cyan-500/10 to-purple-600/10 border border-cyan-500/30 rounded-lg p-4 space-y-3">
                     <h3 className="text-sm font-semibold text-cyan-400 mb-2">Donation Addresses (Click to Copy):</h3>
+
                     <div className="space-y-3 text-sm">
                       {/* EVM */}
                       <div className="flex items-center gap-4">
@@ -452,6 +485,7 @@ export function Layout({
                           {copiedAddress === "evm" ? "✓ Copied!" : "0xD02dbe54454F6FE3c2F9F1F096C5460284E418Ed"}
                         </div>
                       </div>
+
                       {/* SOL */}
                       <div className="flex items-center gap-4">
                         <span className="text-gray-400 font-medium min-w-[120px]">Solana:</span>
@@ -473,6 +507,7 @@ export function Layout({
                           {copiedAddress === "sol" ? "✓ Copied!" : "HkJhW2X9xYw9n4sp3e9BBh33Np6iNghpU7gtDJ5ATqYx"}
                         </div>
                       </div>
+
                       {/* SUI */}
                       <div className="flex items-center gap-4">
                         <span className="text-gray-400 font-medium min-w-[120px]">Sui Network:</span>
@@ -498,6 +533,7 @@ export function Layout({
                             : "0xef000226f93506df5a3b1eaaae7835e919ff69c18d4929ed1537d656fb324dfe"}
                         </div>
                       </div>
+
                       {/* BTC */}
                       <div className="flex items-center gap-4">
                         <span className="text-gray-400 font-medium min-w-[120px]">Bitcoin:</span>
@@ -519,6 +555,7 @@ export function Layout({
                           {copiedAddress === "btc" ? "✓ Copied!" : "bc1qwtzdtx6ghfzy065wmv3xfk8tyqqr2w87tnrx9r"}
                         </div>
                       </div>
+
                       {/* CashApp */}
                       <div className="flex items-center gap-4">
                         <span className="text-gray-400 font-medium min-w-[120px]">CashApp:</span>
@@ -542,6 +579,7 @@ export function Layout({
                       </div>
                     </div>
                   </div>
+
                   <div className="bg-green-500/10 border border-green-500/30 rounded-lg p-3">
                     <p className="text-sm text-green-400">
                       <strong>Thank you for your support!</strong> Every contribution is deeply appreciated and
@@ -550,6 +588,7 @@ export function Layout({
                     </p>
                   </div>
                 </div>
+
                 <Button
                   onClick={() => setSupportOpen(false)}
                   className="w-full bg-gradient-to-r from-cyan-500 to-purple-600 hover:from-cyan-600 hover:to-purple-700 text-white"
@@ -568,6 +607,7 @@ export function Layout({
                     <div className="absolute -top-2 -right-2 w-4 h-4 bg-yellow-400 rounded-full animate-ping"></div>
                     <div className="absolute -bottom-1 -left-1 w-3 h-3 bg-cyan-400 rounded-full animate-ping" style={{ animationDelay: "0.5s" }}></div>
                   </div>
+
                   <div className="space-y-3">
                     <h2
                       className="text-2xl font-bold bg-gradient-to-r from-pink-400 to-purple-400 bg-clip-text text-transparent animate-in slide-in-from-bottom duration-500"
@@ -582,6 +622,7 @@ export function Layout({
                       Your {selectedDonationType} donation address has been copied
                     </p>
                   </div>
+
                   <div
                     className="bg-gradient-to-r from-purple-500/10 to-pink-500/10 border border-purple-500/30 rounded-lg p-4 space-y-3 animate-in slide-in-from-bottom duration-500"
                     style={{ animationDelay: "0.6s" }}
@@ -594,6 +635,7 @@ export function Layout({
                       <li>• Community growth initiatives</li>
                     </ul>
                   </div>
+
                   <div className="space-y-3 animate-in slide-in-from-bottom duration-500" style={{ animationDelay: "0.8s" }}>
                     <p className="text-sm text-gray-400">Want a personal thank you message? (Optional)</p>
                     <input
@@ -604,6 +646,7 @@ export function Layout({
                       className="w-full px-3 py-2 bg-black/30 border border-gray-600 rounded-lg text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-purple-500"
                     />
                   </div>
+
                   {donorName && (
                     <div className="bg-gradient-to-r from-green-500/10 to-emerald-500/10 border border-green-500/30 rounded-lg p-3 animate-in slide-in-from-bottom duration-500">
                       <p className="text-green-400">
@@ -614,6 +657,7 @@ export function Layout({
                       </p>
                     </div>
                   )}
+
                   <div className="flex gap-3 animate-in slide-in-from-bottom duration-500" style={{ animationDelay: "1s" }}>
                     <Button
                       onClick={() => {
