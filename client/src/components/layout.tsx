@@ -9,6 +9,13 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { Card } from "@/components/ui/card";
 import { WalletConnect } from "@/components/wallet-connect";
+import { usePublicClient } from "wagmi";
+import { formatEther } from "viem";
+import ERC20ABI from "@/services/abis/ERC20.json";
+
+// Contract addresses on Sepolia
+const OEC_TOKEN = "0x2b2fb8df4ac5d394f0d5674d7a54802e42a06aba";
+const STAKING_CONTRACT = "0x4a4da37c9a9f421efe3feb527fc16802ce756ec3";
 
 // Icons (trimmed to only those used here)
 import {
@@ -86,6 +93,14 @@ export function Layout({
   const [selectedDonationType, setSelectedDonationType] = useState<string>("");
   const [donorName, setDonorName] = useState("");
 
+  // Token stats state
+  const [tokenStats, setTokenStats] = useState({
+    totalSupply: 0n,
+    tvl: 0n,
+  });
+
+  const publicClient = usePublicClient();
+
   const [location, navigate] = useLocation();
   const isNavigatingRef = useRef(false);
   const lockedCollapsedStateRef = useRef<boolean | null>(null);
@@ -134,6 +149,47 @@ export function Layout({
       }, 100);
     }
   }, [location]);
+
+  // Fetch token stats
+  useEffect(() => {
+    const fetchTokenStats = async () => {
+      if (!publicClient) return;
+
+      try {
+        // Fetch total supply
+        const totalSupply = await publicClient.readContract({
+          address: OEC_TOKEN,
+          abi: ERC20ABI,
+          functionName: "totalSupply",
+        }) as bigint;
+
+        // Fetch TVL (tokens held by staking contract)
+        const tvl = await publicClient.readContract({
+          address: OEC_TOKEN,
+          abi: ERC20ABI,
+          functionName: "balanceOf",
+          args: [STAKING_CONTRACT],
+        }) as bigint;
+
+        setTokenStats({ totalSupply, tvl });
+      } catch (error) {
+        console.error("Error fetching token stats:", error);
+      }
+    };
+
+    fetchTokenStats();
+    const interval = setInterval(fetchTokenStats, 60000); // Refresh every minute
+    return () => clearInterval(interval);
+  }, [publicClient]);
+
+  // Format large numbers with abbreviations
+  const formatLargeNumber = (num: bigint) => {
+    const n = Number(formatEther(num));
+    if (n >= 1_000_000_000) return `${(n / 1_000_000_000).toFixed(1)}B`;
+    if (n >= 1_000_000) return `${(n / 1_000_000).toFixed(1)}M`;
+    if (n >= 1_000) return `${(n / 1_000).toFixed(1)}K`;
+    return n.toLocaleString('en-US', { maximumFractionDigits: 0 });
+  };
 
   const handleNavigation = (path: string) => {
     const wasCollapsed = sidebarCollapsed;
@@ -348,16 +404,13 @@ export function Layout({
                 {/* Stats pills */}
                 <div className="hidden md:flex items-center gap-2">
                   <div className="bg-gray-800 rounded-full px-5 py-1 text-xs font-medium text-cyan-400 border border-cyan-400/30">
-                    Price: $0.73
+                    Price: $0.00
                   </div>
                   <div className="bg-gray-800 rounded-full px-3 py-1 text-xs font-medium text-cyan-400 border border-cyan-400/30">
-                    Total Supply: 100M
+                    Supply: {formatLargeNumber(tokenStats.totalSupply)}
                   </div>
                   <div className="bg-gray-800 rounded-full px-5 py-1 text-xs font-medium text-cyan-400 border border-cyan-400/30">
-                    Circ: 60M
-                  </div>
-                  <div className="bg-gray-800 rounded-full px-5 py-1 text-xs font-medium text-cyan-400 border border-cyan-400/30">
-                    TVL: $0
+                    TVL: {formatLargeNumber(tokenStats.tvl)} OEC
                   </div>
                 </div>
 
