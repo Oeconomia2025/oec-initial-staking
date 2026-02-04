@@ -1,6 +1,11 @@
 # Dependencies
 node_modules/
 
+# Hardhat artifacts
+artifacts/
+cache/
+typechain-types/
+
 # Build outputs
 dist/
 build/
