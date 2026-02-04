@@ -260,12 +260,12 @@ export function Layout({
             sidebarCollapsed ? "w-16" : "w-48"
           } bg-gray-950 border-r border-gray-700 transform ${
             sidebarOpen ? "translate-x-0" : "-translate-x-full"
-          } transition-all duration-300 ease-in-out lg:translate-x-0 lg:static lg:inset-0 flex flex-col shadow-xl shadow-black/70`}
+          } transition-all duration-300 ease-in-out lg:translate-x-0 lg:static lg:inset-0 flex flex-col shadow-xl shadow-black/70 overflow-visible`}
         >
-          {/* Collapse/Expand button on outer edge */}
+          {/* Collapse/Expand button on outer edge at top */}
           <button
             onClick={toggleCollapsed}
-            className="hidden lg:flex absolute top-1/2 -right-3 transform -translate-y-1/2 z-50 w-6 h-6 bg-gray-800 border border-gray-600 rounded-full items-center justify-center hover:bg-gray-700 transition-colors"
+            className="hidden lg:flex absolute top-6 -right-3 z-[60] w-6 h-6 bg-gray-800 border border-gray-600 rounded-full items-center justify-center hover:bg-gray-700 transition-colors"
             title={sidebarCollapsed ? "Expand sidebar" : "Collapse sidebar"}
           >
             {sidebarCollapsed ? <ChevronRight className="w-3 h-3" /> : <ChevronLeft className="w-3 h-3" />}
