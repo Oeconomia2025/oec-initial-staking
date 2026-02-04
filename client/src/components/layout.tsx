@@ -342,7 +342,7 @@ export function Layout({
               <DropdownMenuContent
                 side="top"
                 align="start"
-                className={`mb-2 ${sidebarCollapsed ? "w-[calc(4rem-2rem)]" : "w-[calc(12rem-2rem)]"}`}
+                className={`mb-2 ${sidebarCollapsed ? "w-[calc(4rem-1rem)]" : "w-[calc(12rem-1rem)]"}`}
               >
                 <DropdownMenuItem
                   onClick={() => window.open("https://oeconomia.tech/", "_blank")}
