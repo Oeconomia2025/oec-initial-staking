@@ -27,7 +27,7 @@ import {
   ExternalLink,
 } from "lucide-react";
 import { WalletConnect } from "@/components/wallet-connect";
-import { useAccount, usePublicClient, useChainId, useSwitchChain } from "wagmi";
+import { useAccount, usePublicClient, useSwitchChain } from "wagmi";
 import { sepolia } from "wagmi/chains";
 import { formatEther } from "viem";
 import MultiPoolStakingAPRABI from "@/services/abis/MultiPoolStakingAPR.json";
@@ -54,12 +54,11 @@ interface UserStats {
 }
 
 export default function Dashboard() {
-  const { isConnected, address } = useAccount();
+  const { isConnected, address, chain } = useAccount();
   const publicClient = usePublicClient();
-  const chainId = useChainId();
   const { switchChain } = useSwitchChain();
 
-  const isCorrectNetwork = chainId === sepolia.id;
+  const isCorrectNetwork = chain?.id === sepolia.id;
 
   const [initialLoading, setInitialLoading] = useState(true);
   const [stats, setStats] = useState<UserStats>({

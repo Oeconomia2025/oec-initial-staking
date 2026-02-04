@@ -13,7 +13,7 @@ import {
   Loader2
 } from "lucide-react";
 import { WalletConnect } from "@/components/wallet-connect";
-import { useAccount, usePublicClient, useWalletClient, useChainId, useSwitchChain } from "wagmi";
+import { useAccount, usePublicClient, useWalletClient, useSwitchChain } from "wagmi";
 import { sepolia } from "wagmi/chains";
 import { parseEther, formatEther } from "viem";
 import MultiPoolStakingAPRABI from "@/services/abis/MultiPoolStakingAPR.json";
@@ -37,13 +37,12 @@ interface PoolData {
 }
 
 export default function Pools() {
-  const { isConnected, address } = useAccount();
+  const { isConnected, address, chain } = useAccount();
   const publicClient = usePublicClient();
   const { data: walletClient } = useWalletClient();
-  const chainId = useChainId();
   const { switchChain } = useSwitchChain();
 
-  const isCorrectNetwork = chainId === sepolia.id;
+  const isCorrectNetwork = chain?.id === sepolia.id;
 
   const [expandedPool, setExpandedPool] = useState<number | null>(null);
   const [activeTab, setActiveTab] = useState<{ [key: number]: string }>({});
@@ -108,9 +107,19 @@ export default function Pools() {
             }) as bigint;
           }
 
+          // Generate pool name based on lock period
+          const lockSeconds = Number(poolInfo[3]);
+          let poolName = "OEC Flexible Staking";
+          if (lockSeconds >= 86400) {
+            const days = Math.floor(lockSeconds / 86400);
+            poolName = `OEC ${days}-Day Lock`;
+          } else if (lockSeconds > 0) {
+            poolName = `OEC ${lockSeconds}s Lock (Test)`;
+          }
+
           poolsData.push({
             id: i,
-            name: `OEC Staking Pool ${i}`,
+            name: poolName,
             stakingToken: poolInfo[0],
             rewardsToken: poolInfo[1],
             aprBps: poolInfo[2],
@@ -376,9 +385,9 @@ export default function Pools() {
         )}
 
         {/* Staking Pools */}
-        <div className="space-y-1">
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
           {pools.map((pool) => (
-            <div key={pool.id} className="space-y-0">
+            <div key={pool.id} style={{ margin: 0, padding: 0 }}>
               {/* Pool Header */}
               <div
                 className={`relative p-2 sm:p-3 bg-gradient-to-r ${pool.gradient} ${expandedPool === pool.id ? 'rounded-t-md' : 'rounded-md'} cursor-pointer transition-all duration-200 hover:shadow-md`}
