@@ -265,7 +265,9 @@ export function Layout({
           {/* Collapse/Expand button on outer edge at top */}
           <button
             onClick={toggleCollapsed}
-            className="hidden lg:flex absolute top-[29px] -right-3 z-[60] w-6 h-6 bg-gray-800 border border-gray-600 rounded-full items-center justify-center hover:bg-gray-700 transition-colors"
+            className={`hidden lg:flex fixed top-[29px] z-[60] w-6 h-6 bg-gray-800 border border-gray-600 rounded-full items-center justify-center hover:bg-gray-700 transition-all duration-300 ${
+              sidebarCollapsed ? "left-[52px]" : "left-[180px]"
+            }`}
             title={sidebarCollapsed ? "Expand sidebar" : "Collapse sidebar"}
           >
             {sidebarCollapsed ? <ChevronRight className="w-3 h-3" /> : <ChevronLeft className="w-3 h-3" />}
