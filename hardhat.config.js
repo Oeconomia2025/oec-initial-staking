@@ -1,4 +1,6 @@
-import "@nomicfoundation/hardhat-toolbox";
+import dotenv from "dotenv";
+
+dotenv.config();
 
 /** @type import('hardhat/config').HardhatUserConfig */
 const config = {
@@ -13,12 +15,14 @@ const config = {
   },
   networks: {
     hardhat: {
+      type: "edr-simulated"
     },
-    // Add other networks here as needed
-    // sepolia: {
-    //   url: `https://sepolia.infura.io/v3/${process.env.INFURA_API_KEY}`,
-    //   accounts: [process.env.PRIVATE_KEY]
-    // }
+    sepolia: {
+      type: "http",
+      url: process.env.SEPOLIA_RPC_URL || "https://rpc.sepolia.org",
+      accounts: process.env.PRIVATE_KEY ? [process.env.PRIVATE_KEY] : [],
+      chainId: 11155111
+    }
   },
   paths: {
     sources: "./contracts/contracts",

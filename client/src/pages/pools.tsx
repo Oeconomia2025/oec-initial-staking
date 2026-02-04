@@ -1,90 +1,171 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Layout } from "@/components/layout";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { 
+import {
   Lock,
   Clock,
   TrendingUp,
   Wallet,
-  Plus,
   ChevronDown,
-  ChevronUp
+  ChevronUp,
+  Loader2
 } from "lucide-react";
 import { WalletConnect } from "@/components/wallet-connect";
-import { useAccount } from "wagmi";
+import { useAccount, usePublicClient, useWalletClient, useChainId, useSwitchChain } from "wagmi";
+import { sepolia } from "wagmi/chains";
+import { parseEther, formatEther } from "viem";
+import MultiPoolStakingAPRABI from "@/services/abis/MultiPoolStakingAPR.json";
+import ERC20ABI from "@/services/abis/ERC20.json";
 
-// Mock data for staking pools
-const stakingPools = [
-  {
-    id: 1,
-    name: "OEC Flexible Staking",
-    apy: 15.0,
-    lockPeriod: "Flexible",
-    lockDays: 0,
-    minStake: 100,
-    maxStake: null,
-    totalStaked: 0,
-    participants: 0,
-    description: "Stake and unstake anytime with no lock period",
-    featured: false,
-    gradient: "from-cyan-500 to-blue-600"
-  },
-  {
-    id: 2,
-    name: "OEC 30-Day Lock",
-    apy: 25.0,
-    lockPeriod: "30 Days",
-    lockDays: 30,
-    minStake: 500,
-    maxStake: null,
-    totalStaked: 0,
-    participants: 0,
-    description: "Higher rewards with 30-day commitment",
-    featured: true,
-    gradient: "from-cyan-500 to-teal-600"
-  },
-  {
-    id: 3,
-    name: "OEC 60-Day Lock",
-    apy: 40.0,
-    lockPeriod: "60 Days",
-    lockDays: 60,
-    minStake: 1000,
-    maxStake: null,
-    totalStaked: 0,
-    participants: 0,
-    description: "Premium returns for 60-day staking",
-    featured: true,
-    gradient: "from-purple-500 to-pink-600"
-  },
-  {
-    id: 4,
-    name: "OEC 90-Day Lock",
-    apy: 60.0,
-    lockPeriod: "90 Days",
-    lockDays: 90,
-    minStake: 2000,
-    maxStake: 100000,
-    totalStaked: 0,
-    participants: 0,
-    description: "Maximum APY with 90-day lock period",
-    featured: false,
-    gradient: "from-purple-600 to-purple-800"
-  }
-];
+// Contract addresses on Sepolia
+const STAKING_CONTRACT = "0x4a4da37c9a9f421efe3feb527fc16802ce756ec3";
+const OEC_TOKEN = "0x2b2fb8df4ac5d394f0d5674d7a54802e42a06aba";
+
+interface PoolData {
+  id: number;
+  name: string;
+  stakingToken: string;
+  rewardsToken: string;
+  aprBps: bigint;
+  lockPeriod: bigint;
+  totalSupply: bigint;
+  userBalance: bigint;
+  userEarned: bigint;
+  gradient: string;
+}
 
 export default function Pools() {
-  const { isConnected } = useAccount();
+  const { isConnected, address } = useAccount();
+  const publicClient = usePublicClient();
+  const { data: walletClient } = useWalletClient();
+  const chainId = useChainId();
+  const { switchChain } = useSwitchChain();
+
+  const isCorrectNetwork = chainId === sepolia.id;
+
   const [expandedPool, setExpandedPool] = useState<number | null>(null);
   const [activeTab, setActiveTab] = useState<{ [key: number]: string }>({});
   const [stakeAmount, setStakeAmount] = useState<{ [key: number]: string }>({});
+  const [pools, setPools] = useState<PoolData[]>([]);
+  const [poolCount, setPoolCount] = useState(0);
+  const [userTokenBalance, setUserTokenBalance] = useState<bigint>(0n);
+  const [allowance, setAllowance] = useState<bigint>(0n);
+  const [loading, setLoading] = useState(true);
+  const [txPending, setTxPending] = useState(false);
 
-  const formatNumber = (num: number) => {
-    if (num >= 1000000) return `${(num / 1000000).toFixed(1)}M`;
-    if (num >= 1000) return `${(num / 1000).toFixed(1)}K`;
-    return num.toString();
+  // Fetch pool count and data
+  useEffect(() => {
+    const fetchPools = async () => {
+      if (!publicClient) return;
+
+      try {
+        setLoading(true);
+
+        // Get pool count
+        const count = await publicClient.readContract({
+          address: STAKING_CONTRACT,
+          abi: MultiPoolStakingAPRABI,
+          functionName: "poolCount",
+        }) as bigint;
+
+        setPoolCount(Number(count));
+
+        // Fetch each pool's data
+        const poolsData: PoolData[] = [];
+        const gradients = [
+          "from-cyan-500 to-blue-600",
+          "from-purple-500 to-pink-600",
+          "from-green-500 to-teal-600",
+          "from-orange-500 to-red-600",
+        ];
+
+        for (let i = 0; i < Number(count); i++) {
+          const poolInfo = await publicClient.readContract({
+            address: STAKING_CONTRACT,
+            abi: MultiPoolStakingAPRABI,
+            functionName: "getPoolInfo",
+            args: [BigInt(i)],
+          }) as [string, string, bigint, bigint, bigint, bigint, bigint];
+
+          let userBalance = 0n;
+          let userEarned = 0n;
+
+          if (address) {
+            userBalance = await publicClient.readContract({
+              address: STAKING_CONTRACT,
+              abi: MultiPoolStakingAPRABI,
+              functionName: "balanceOf",
+              args: [BigInt(i), address],
+            }) as bigint;
+
+            userEarned = await publicClient.readContract({
+              address: STAKING_CONTRACT,
+              abi: MultiPoolStakingAPRABI,
+              functionName: "earned",
+              args: [BigInt(i), address],
+            }) as bigint;
+          }
+
+          poolsData.push({
+            id: i,
+            name: `OEC Staking Pool ${i}`,
+            stakingToken: poolInfo[0],
+            rewardsToken: poolInfo[1],
+            aprBps: poolInfo[2],
+            lockPeriod: poolInfo[3],
+            totalSupply: poolInfo[4],
+            userBalance,
+            userEarned,
+            gradient: gradients[i % gradients.length],
+          });
+        }
+
+        setPools(poolsData);
+
+        // Fetch user token balance and allowance
+        if (address) {
+          const balance = await publicClient.readContract({
+            address: OEC_TOKEN,
+            abi: ERC20ABI,
+            functionName: "balanceOf",
+            args: [address],
+          }) as bigint;
+          setUserTokenBalance(balance);
+
+          const allow = await publicClient.readContract({
+            address: OEC_TOKEN,
+            abi: ERC20ABI,
+            functionName: "allowance",
+            args: [address, STAKING_CONTRACT],
+          }) as bigint;
+          setAllowance(allow);
+        }
+      } catch (error) {
+        console.error("Error fetching pools:", error);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchPools();
+  }, [publicClient, address]);
+
+  const formatNumber = (num: bigint, decimals = 2) => {
+    const n = Number(formatEther(num));
+    return n.toLocaleString('en-US', {
+      minimumFractionDigits: decimals,
+      maximumFractionDigits: decimals
+    });
+  };
+
+  const formatLockPeriod = (seconds: bigint) => {
+    const s = Number(seconds);
+    if (s === 0) return "Flexible";
+    if (s < 3600) return `${s} seconds`;
+    if (s < 86400) return `${Math.floor(s / 3600)} hours`;
+    return `${Math.floor(s / 86400)} days`;
   };
 
   const toggleExpand = (poolId: number) => {
@@ -102,14 +183,135 @@ export default function Pools() {
     setStakeAmount(prev => ({ ...prev, [poolId]: value }));
   };
 
-  const getPercentageAmount = (poolId: number, percentage: number) => {
-    const amount = stakeAmount[poolId] ? parseFloat(stakeAmount[poolId]) : 0;
-    return (amount * percentage / 100).toString();
+  const handleApprove = async () => {
+    if (!walletClient || !address) return;
+
+    try {
+      setTxPending(true);
+      const hash = await walletClient.writeContract({
+        address: OEC_TOKEN,
+        abi: ERC20ABI,
+        functionName: "approve",
+        args: [STAKING_CONTRACT, parseEther("1000000000")], // Approve max
+      });
+
+      await publicClient?.waitForTransactionReceipt({ hash });
+      setAllowance(parseEther("1000000000"));
+    } catch (error) {
+      console.error("Approval failed:", error);
+    } finally {
+      setTxPending(false);
+    }
   };
+
+  const handleStake = async (poolId: number) => {
+    if (!walletClient || !address || !stakeAmount[poolId]) return;
+
+    try {
+      setTxPending(true);
+      const amount = parseEther(stakeAmount[poolId]);
+
+      const hash = await walletClient.writeContract({
+        address: STAKING_CONTRACT,
+        abi: MultiPoolStakingAPRABI,
+        functionName: "stake",
+        args: [BigInt(poolId), amount],
+      });
+
+      await publicClient?.waitForTransactionReceipt({ hash });
+
+      // Refresh data
+      window.location.reload();
+    } catch (error) {
+      console.error("Stake failed:", error);
+    } finally {
+      setTxPending(false);
+    }
+  };
+
+  const handleWithdraw = async (poolId: number) => {
+    if (!walletClient || !address || !stakeAmount[poolId]) return;
+
+    try {
+      setTxPending(true);
+      const amount = parseEther(stakeAmount[poolId]);
+
+      const hash = await walletClient.writeContract({
+        address: STAKING_CONTRACT,
+        abi: MultiPoolStakingAPRABI,
+        functionName: "withdraw",
+        args: [BigInt(poolId), amount],
+      });
+
+      await publicClient?.waitForTransactionReceipt({ hash });
+      window.location.reload();
+    } catch (error) {
+      console.error("Withdraw failed:", error);
+    } finally {
+      setTxPending(false);
+    }
+  };
+
+  const handleEarlyWithdraw = async (poolId: number) => {
+    if (!walletClient || !address) return;
+
+    const pool = pools.find(p => p.id === poolId);
+    if (!pool || pool.userBalance === 0n) return;
+
+    try {
+      setTxPending(true);
+
+      const hash = await walletClient.writeContract({
+        address: STAKING_CONTRACT,
+        abi: MultiPoolStakingAPRABI,
+        functionName: "earlyWithdraw",
+        args: [BigInt(poolId), pool.userBalance],
+      });
+
+      await publicClient?.waitForTransactionReceipt({ hash });
+      window.location.reload();
+    } catch (error) {
+      console.error("Early withdraw failed:", error);
+    } finally {
+      setTxPending(false);
+    }
+  };
+
+  const handleClaimRewards = async (poolId: number) => {
+    if (!walletClient || !address) return;
+
+    try {
+      setTxPending(true);
+
+      const hash = await walletClient.writeContract({
+        address: STAKING_CONTRACT,
+        abi: MultiPoolStakingAPRABI,
+        functionName: "getReward",
+        args: [BigInt(poolId)],
+      });
+
+      await publicClient?.waitForTransactionReceipt({ hash });
+      window.location.reload();
+    } catch (error) {
+      console.error("Claim failed:", error);
+    } finally {
+      setTxPending(false);
+    }
+  };
+
+  if (loading) {
+    return (
+      <Layout>
+        <div className="container mx-auto px-4 py-8 flex items-center justify-center">
+          <Loader2 className="w-8 h-8 animate-spin text-blue-500" />
+          <span className="ml-2">Loading pools...</span>
+        </div>
+      </Layout>
+    );
+  }
 
   return (
     <Layout>
-      {/* Added mt-4 to create more space between top bar and first card */}
       <div className="container mx-auto px-4 sm:px-6 py-4 sm:py-5 space-y-2.5 sm:space-y-3 mt-3">
         {/* Wallet Connection Notice */}
         {!isConnected && (
@@ -119,7 +321,7 @@ export default function Pools() {
                 <Wallet className="w-4 h-4 text-yellow-400" />
                 <div>
                   <p className="text-xs font-medium">Connect your wallet to start staking</p>
-                  <p className="text-[0.6rem] text-gray-400">You can browse pools without connection, but need a wallet to stake</p>
+                  <p className="text-[0.6rem] text-gray-400">Switch to Sepolia testnet after connecting</p>
                 </div>
               </div>
               <div className="max-w-xs">
@@ -129,12 +331,56 @@ export default function Pools() {
           </Card>
         )}
 
+        {/* Wrong Network Warning */}
+        {isConnected && !isCorrectNetwork && (
+          <Card className="crypto-card p-3 border mb-3 bg-gradient-to-r from-red-500/10 to-orange-500/10 border-red-500/30">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center space-x-2">
+                <Wallet className="w-4 h-4 text-red-400" />
+                <div>
+                  <p className="text-xs font-medium text-red-400">Wrong Network</p>
+                  <p className="text-[0.6rem] text-gray-400">Please switch to Sepolia to use this dapp</p>
+                </div>
+              </div>
+              <button
+                onClick={() => switchChain({ chainId: sepolia.id })}
+                className="px-3 py-1.5 bg-red-500 hover:bg-red-600 text-white text-xs font-medium rounded-md transition-colors"
+              >
+                Switch to Sepolia
+              </button>
+            </div>
+          </Card>
+        )}
+
+        {/* User Balance Card */}
+        {isConnected && isCorrectNetwork && (
+          <Card className="crypto-card p-3 border mb-3 bg-gradient-to-r from-blue-500/10 to-purple-500/10 border-blue-500/30">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-xs text-gray-400">Your OEC Balance</p>
+                <p className="text-lg font-bold">{formatNumber(userTokenBalance)}</p>
+              </div>
+              <div>
+                <p className="text-xs text-gray-400">Token Address</p>
+                <p className="text-xs font-mono">{OEC_TOKEN.slice(0, 10)}...{OEC_TOKEN.slice(-8)}</p>
+              </div>
+            </div>
+          </Card>
+        )}
+
+        {/* No Pools Message */}
+        {pools.length === 0 && (
+          <Card className="crypto-card p-6 text-center">
+            <p className="text-gray-400">No staking pools available yet.</p>
+          </Card>
+        )}
+
         {/* Staking Pools */}
         <div className="space-y-1">
-          {stakingPools.map((pool) => (
+          {pools.map((pool) => (
             <div key={pool.id} className="space-y-0">
               {/* Pool Header */}
-              <div 
+              <div
                 className={`relative p-2 sm:p-3 bg-gradient-to-r ${pool.gradient} ${expandedPool === pool.id ? 'rounded-t-md' : 'rounded-md'} cursor-pointer transition-all duration-200 hover:shadow-md`}
                 onClick={() => toggleExpand(pool.id)}
               >
@@ -145,24 +391,27 @@ export default function Pools() {
                       <h3 className="text-sm sm:text-base font-semibold truncate">{pool.name}</h3>
                       <div className="flex items-center space-x-1 text-[0.6rem] sm:text-xs opacity-90">
                         <Clock className="w-2 h-2 sm:w-3 sm:h-3 flex-shrink-0" />
-                        <span className="truncate">{pool.lockPeriod}</span>
+                        <span className="truncate">{formatLockPeriod(pool.lockPeriod)}</span>
                         <span className="hidden sm:inline">—</span>
-                        <span className="hidden sm:inline">staked</span>
+                        <span className="hidden sm:inline">{formatNumber(pool.totalSupply)} staked</span>
                       </div>
                     </div>
                   </div>
-                  
-                  <div className="flex items-center space-x-1 sm:space-x-2 flex-shrink-0">
+
+                  <div className="flex items-center space-x-2 sm:space-x-4 flex-shrink-0">
                     <div className="text-right">
-                      <Badge className="bg-white/20 text-white border-white/30 mb-0.5 text-[0.6rem] sm:text-xs">
-                        {pool.apy}% APY
-                      </Badge>
-                      <div className="text-[0.6rem] sm:text-xs opacity-90">0 OEC</div>
+                      <div className="text-base sm:text-xl font-bold">
+                        {formatNumber(pool.userBalance)}
+                      </div>
+                      <div className="text-[0.6rem] sm:text-xs opacity-75">staked</div>
                     </div>
+                    <Badge className="bg-white/20 text-white border-white/30 text-xs sm:text-sm px-2 sm:px-3 py-1">
+                      {Number(pool.aprBps) / 100}% APR
+                    </Badge>
                     {expandedPool === pool.id ? (
-                      <ChevronUp className="w-3 h-3 sm:w-4 sm:h-4" />
+                      <ChevronUp className="w-4 h-4 sm:w-5 sm:h-5" />
                     ) : (
-                      <ChevronDown className="w-3 h-3 sm:w-4 sm:h-4" />
+                      <ChevronDown className="w-4 h-4 sm:w-5 sm:h-5" />
                     )}
                   </div>
                 </div>
@@ -190,8 +439,14 @@ export default function Pools() {
                         ))}
                       </div>
                       <div className="flex flex-col sm:flex-row gap-1 sm:space-x-1">
-                        <Button variant="outline" size="sm" className="bg-red-900 text-white-400 hover:bg-red-500/10 text-[0.6rem] sm:text-xs h-7">
-                          Early Withdraw
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          className="bg-red-900 text-white-400 hover:bg-red-500/10 text-[0.6rem] sm:text-xs h-7"
+                          onClick={() => handleEarlyWithdraw(pool.id)}
+                          disabled={txPending || pool.userBalance === 0n}
+                        >
+                          {txPending ? <Loader2 className="w-3 h-3 animate-spin" /> : "Early Withdraw"}
                         </Button>
                       </div>
                     </div>
@@ -201,7 +456,7 @@ export default function Pools() {
                       <div className="grid grid-cols-1 lg:grid-cols-2 gap-2 min-h-[175px]">
                         <div className="space-y-2">
                           <h4 className="text-sm font-semibold">Amount to Stake</h4>
-                          
+
                           <div className="relative">
                             <input
                               type="number"
@@ -216,7 +471,10 @@ export default function Pools() {
                             {[25, 50, 75, 100].map((percentage) => (
                               <button
                                 key={percentage}
-                                onClick={() => handleStakeAmountChange(pool.id, getPercentageAmount(pool.id, percentage))}
+                                onClick={() => {
+                                  const amount = (Number(formatEther(userTokenBalance)) * percentage / 100).toString();
+                                  handleStakeAmountChange(pool.id, amount);
+                                }}
                                 className="py-1 px-1 sm:px-2 bg-black hover:bg-gray-600 rounded text-[0.6rem] sm:text-xs font-medium transition-colors"
                               >
                                 {percentage === 100 ? 'Max' : `${percentage}%`}
@@ -225,42 +483,54 @@ export default function Pools() {
                           </div>
 
                           <p className="text-[0.6rem] text-gray-400">
-                            Min/Max are enforced by contract (if any). Ensure you've approved enough OEC.
+                            Balance: {formatNumber(userTokenBalance)} OEC
                           </p>
 
-                          <Button className="w-full bg-blue-600 hover:bg-blue-900 text-white py-1.5 text-xs sm:text-sm font-semibold">
-                            Stake
-                          </Button>
+                          {allowance === 0n ? (
+                            <Button
+                              className="w-full bg-yellow-600 hover:bg-yellow-700 text-white py-1.5 text-xs sm:text-sm font-semibold"
+                              onClick={handleApprove}
+                              disabled={txPending || !isConnected}
+                            >
+                              {txPending ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : null}
+                              Approve OEC
+                            </Button>
+                          ) : (
+                            <Button
+                              className="w-full bg-blue-600 hover:bg-blue-900 text-white py-1.5 text-xs sm:text-sm font-semibold"
+                              onClick={() => handleStake(pool.id)}
+                              disabled={txPending || !isConnected || !stakeAmount[pool.id]}
+                            >
+                              {txPending ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : null}
+                              Stake
+                            </Button>
+                          )}
                         </div>
 
                         <div className="space-y-2">
                           <div className="bg-black rounded-md p-2 sm:p-2 space-y-2">
                             <div className="flex justify-between items-start">
-                              <span className="text-gray-400 text-[0.6rem] sm:text-xs">Estimated Daily Rewards:</span>
-                              <span className="font-semibold text-green-400 text-[0.6rem] sm:text-xs">0.00 OEC</span>
-                            </div>
-                            <div className="flex justify-between items-start">
-                              <span className="text-gray-400 text-[0.6rem] sm:text-xs">Estimated Monthly Rewards:</span>
-                              <span className="font-semibold text-green-400 text-[0.6rem] sm:text-xs">0.00 OEC</span>
+                              <span className="text-gray-400 text-[0.6rem] sm:text-xs">APR:</span>
+                              <span className="font-semibold text-green-400 text-[0.6rem] sm:text-xs">{Number(pool.aprBps) / 100}%</span>
                             </div>
                             <div className="flex justify-between items-start">
                               <span className="text-gray-400 text-[0.6rem] sm:text-xs">Lock Period:</span>
-                              <span className="font-semibold text-[0.6rem] sm:text-xs">{pool.lockPeriod}</span>
+                              <span className="font-semibold text-[0.6rem] sm:text-xs">{formatLockPeriod(pool.lockPeriod)}</span>
+                            </div>
+                            <div className="flex justify-between items-start">
+                              <span className="text-gray-400 text-[0.6rem] sm:text-xs">Your Staked:</span>
+                              <span className="font-semibold text-[0.6rem] sm:text-xs">{formatNumber(pool.userBalance)} OEC</span>
                             </div>
                           </div>
 
                           <div className="space-y-1 text-[0.6rem] sm:p-2 sm:text-xs">
                             <div className="flex justify-between">
-                              <span className="text-gray-400">Min Stake:</span>
-                              <span>{formatNumber(pool.minStake)} OEC</span>
-                            </div>
-                            <div className="flex justify-between">
                               <span className="text-gray-400">Total Staked:</span>
-                              <span>{formatNumber(pool.totalStaked)} OEC</span>
+                              <span>{formatNumber(pool.totalSupply)} OEC</span>
                             </div>
                             <div className="flex justify-between">
-                              <span className="text-gray-400">Participants:</span>
-                              <span>{pool.participants.toLocaleString()}</span>
+                              <span className="text-gray-400">Your Earned:</span>
+                              <span className="text-green-400">{formatNumber(pool.userEarned)} OEC</span>
                             </div>
                           </div>
                         </div>
@@ -272,7 +542,7 @@ export default function Pools() {
                       <div className="grid grid-cols-1 lg:grid-cols-2 gap-2 min-h-[175px]">
                         <div className="space-y-2">
                           <h4 className="text-sm font-semibold">Amount to Unstake</h4>
-                          
+
                           <div className="relative">
                             <input
                               type="number"
@@ -287,7 +557,10 @@ export default function Pools() {
                             {[25, 50, 75, 100].map((percentage) => (
                               <button
                                 key={percentage}
-                                onClick={() => handleStakeAmountChange(pool.id, getPercentageAmount(pool.id, percentage))}
+                                onClick={() => {
+                                  const amount = (Number(formatEther(pool.userBalance)) * percentage / 100).toString();
+                                  handleStakeAmountChange(pool.id, amount);
+                                }}
                                 className="py-1 px-1 sm:px-2 bg-black hover:bg-gray-600 rounded text-[0.6rem] sm:text-xs font-medium transition-colors"
                               >
                                 {percentage === 100 ? 'Max' : `${percentage}%`}
@@ -296,10 +569,15 @@ export default function Pools() {
                           </div>
 
                           <p className="text-[0.6rem] text-gray-400">
-                            Early unstaking may apply penalties (see pool rules).
+                            Staked: {formatNumber(pool.userBalance)} OEC
                           </p>
 
-                          <Button className="w-full bg-blue-600 hover:bg-blue-900 text-white py-1.5 text-xs sm:text-sm font-semibold">
+                          <Button
+                            className="w-full bg-blue-600 hover:bg-blue-900 text-white py-1.5 text-xs sm:text-sm font-semibold"
+                            onClick={() => handleWithdraw(pool.id)}
+                            disabled={txPending || !isConnected || !stakeAmount[pool.id] || pool.userBalance === 0n}
+                          >
+                            {txPending ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : null}
                             Unstake
                           </Button>
                         </div>
@@ -307,18 +585,21 @@ export default function Pools() {
                         <div className="space-y-2">
                           <div className="bg-black rounded-md p-2 sm:p-2 space-y-2">
                             <div className="flex justify-between items-start">
-                              <span className="text-gray-400 text-[0.6rem] sm:text-xs">Estimated Daily Rewards:</span>
-                              <span className="font-semibold text-green-400 text-[0.6rem] sm:text-xs">0.00 OEC</span>
+                              <span className="text-gray-400 text-[0.6rem] sm:text-xs">Your Staked:</span>
+                              <span className="font-semibold text-[0.6rem] sm:text-xs">{formatNumber(pool.userBalance)} OEC</span>
                             </div>
                             <div className="flex justify-between items-start">
-                              <span className="text-gray-400 text-[0.6rem] sm:text-xs">Estimated Monthly Rewards:</span>
-                              <span className="font-semibold text-green-400 text-[0.6rem] sm:text-xs">0.00 OEC</span>
+                              <span className="text-gray-400 text-[0.6rem] sm:text-xs">Pending Rewards:</span>
+                              <span className="font-semibold text-green-400 text-[0.6rem] sm:text-xs">{formatNumber(pool.userEarned)} OEC</span>
                             </div>
                             <div className="flex justify-between items-start">
                               <span className="text-gray-400 text-[0.6rem] sm:text-xs">Lock Period:</span>
-                              <span className="font-semibold text-[0.6rem] sm:text-xs">{pool.lockPeriod}</span>
+                              <span className="font-semibold text-[0.6rem] sm:text-xs">{formatLockPeriod(pool.lockPeriod)}</span>
                             </div>
                           </div>
+                          <p className="text-[0.6rem] text-yellow-400 p-2">
+                            Note: Withdrawing before lock period ends will use Early Withdraw with 10% penalty.
+                          </p>
                         </div>
                       </div>
                     )}
@@ -328,11 +609,18 @@ export default function Pools() {
                       <div className="grid grid-cols-1 lg:grid-cols-2 gap-2 min-h-[175px]">
                         <div className="space-y-2 flex flex-col justify-center">
                           <div className="text-center space-y-3 mt-4">
-                            <div className="text-2xl sm:text-4xl font-bold text-green-400">0.00</div>
+                            <div className="text-2xl sm:text-4xl font-bold text-green-400">
+                              {formatNumber(pool.userEarned)}
+                            </div>
                             <div className="text-xs sm:text-sm text-gray-400">OEC</div>
                             <div className="text-[0.6rem] sm:text-xs text-gray-500">Available Rewards</div>
-                            
-                            <Button className="w-full bg-green-600 hover:bg-green-900 text-white py-1.5 text-xs sm:text-sm font-semibold">
+
+                            <Button
+                              className="w-full bg-green-600 hover:bg-green-900 text-white py-1.5 text-xs sm:text-sm font-semibold"
+                              onClick={() => handleClaimRewards(pool.id)}
+                              disabled={txPending || !isConnected || pool.userEarned === 0n}
+                            >
+                              {txPending ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : null}
                               Claim Rewards
                             </Button>
                           </div>
@@ -341,16 +629,16 @@ export default function Pools() {
                         <div className="space-y-2">
                           <div className="bg-black rounded-md p-2 sm:p-2 space-y-2">
                             <div className="flex justify-between items-start">
-                              <span className="text-gray-400 text-[0.6rem] sm:text-xs">Total Earned:</span>
-                              <span className="font-semibold text-[0.6rem] sm:text-xs">0.00 DDB</span>
+                              <span className="text-gray-400 text-[0.6rem] sm:text-xs">Your Staked:</span>
+                              <span className="font-semibold text-[0.6rem] sm:text-xs">{formatNumber(pool.userBalance)} OEC</span>
                             </div>
                             <div className="flex justify-between items-start">
-                              <span className="text-gray-400 text-[0.6rem] sm:text-xs">Next Reward:</span>
-                              <span className="font-semibold text-[0.6rem] sm:text-xs">—</span>
+                              <span className="text-gray-400 text-[0.6rem] sm:text-xs">APR:</span>
+                              <span className="font-semibold text-green-400 text-[0.6rem] sm:text-xs">{Number(pool.aprBps) / 100}%</span>
                             </div>
                             <div className="flex justify-between items-start">
-                              <span className="text-gray-400 text-[0.6rem] sm:text-xs">Distribution:</span>
-                              <span className="font-semibold text-[0.6rem] sm:text-xs">per block</span>
+                              <span className="text-gray-400 text-[0.6rem] sm:text-xs">Reward Token:</span>
+                              <span className="font-semibold text-[0.6rem] sm:text-xs">OEC</span>
                             </div>
                           </div>
                         </div>
@@ -372,21 +660,50 @@ export default function Pools() {
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 sm:gap-3">
             <div className="text-center">
               <div className="text-base sm:text-lg font-bold text-crypto-blue">
-                {formatNumber(stakingPools.reduce((sum, pool) => sum + pool.totalStaked, 0))}
+                {formatNumber(pools.reduce((sum, pool) => sum + pool.totalSupply, 0n))} OEC
               </div>
               <div className="text-[0.6rem] sm:text-xs text-gray-400">Total Value Locked</div>
             </div>
             <div className="text-center">
               <div className="text-base sm:text-lg font-bold text-crypto-green">
-                {stakingPools.reduce((sum, pool) => sum + pool.participants, 0).toLocaleString()}
+                {pools.length}
               </div>
-              <div className="text-[0.6rem] sm:text-xs text-gray-400">Total Participants</div>
+              <div className="text-[0.6rem] sm:text-xs text-gray-400">Active Pools</div>
             </div>
             <div className="text-center">
               <div className="text-base sm:text-lg font-bold text-purple-400">
-                {Math.max(...stakingPools.map(pool => pool.apy))}%
+                {pools.length > 0 ? Math.max(...pools.map(pool => Number(pool.aprBps) / 100)) : 0}%
               </div>
-              <div className="text-[0.6rem] sm:text-xs text-gray-400">Highest APY</div>
+              <div className="text-[0.6rem] sm:text-xs text-gray-400">Highest APR</div>
+            </div>
+          </div>
+        </Card>
+
+        {/* Contract Info */}
+        <Card className="crypto-card p-2 sm:p-3 border bg-gray-900/50">
+          <h3 className="text-xs font-semibold mb-2">Contract Addresses (Sepolia)</h3>
+          <div className="space-y-1 text-[0.6rem] font-mono">
+            <div className="flex justify-between">
+              <span className="text-gray-400">Staking:</span>
+              <a
+                href={`https://sepolia.etherscan.io/address/${STAKING_CONTRACT}`}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="text-blue-400 hover:underline"
+              >
+                {STAKING_CONTRACT}
+              </a>
+            </div>
+            <div className="flex justify-between">
+              <span className="text-gray-400">OEC Token:</span>
+              <a
+                href={`https://sepolia.etherscan.io/address/${OEC_TOKEN}`}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="text-blue-400 hover:underline"
+              >
+                {OEC_TOKEN}
+              </a>
             </div>
           </div>
         </Card>

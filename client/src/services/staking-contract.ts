@@ -1,8 +1,8 @@
 import { Address, PublicClient, WalletClient } from 'viem';
 import MultiPoolStakingAPRABI from './abis/MultiPoolStakingAPR.json';
 
-// Contract address - this would be set after deployment
-const CONTRACT_ADDRESS = '0x0000000000000000000000000000000000000000';
+// Contract address on Sepolia testnet
+const CONTRACT_ADDRESS = '0x4a4da37c9a9f421efe3feb527fc16802ce756ec3';
 
 export interface StakingPoolInfo {
   stakingToken: Address;
