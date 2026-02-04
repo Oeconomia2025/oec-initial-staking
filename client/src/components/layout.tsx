@@ -377,7 +377,7 @@ export function Layout({
               } py-2 rounded-lg text-left transition-colors group relative text-white hover:bg-white/5 transition-all duration-200`}
               style={{
                 borderRadius: '5px',
-                background: 'linear-gradient(var(--background), var(--background)) padding-box, linear-gradient(45deg, #a855f7, #3b82f6, #06b6d4) border-box',
+                background: 'linear-gradient(#000000, #000000) padding-box, linear-gradient(45deg, #a855f7, #3b82f6, #06b6d4) border-box',
                 border: '2px solid transparent'
               }}
               title={sidebarCollapsed ? "Oeconomia" : undefined}
