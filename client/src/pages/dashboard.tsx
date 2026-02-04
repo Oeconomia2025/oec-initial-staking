@@ -27,6 +27,7 @@ import {
   ExternalLink,
 } from "lucide-react";
 import { WalletConnect } from "@/components/wallet-connect";
+import { OECLoader } from "@/components/oec-loader";
 import { useAccount, usePublicClient, useSwitchChain } from "wagmi";
 import { sepolia } from "wagmi/chains";
 import { formatEther } from "viem";
@@ -239,9 +240,8 @@ export default function Dashboard() {
   if (initialLoading && isConnected) {
     return (
       <Layout>
-        <div className="container mx-auto px-4 py-8 flex items-center justify-center">
-          <Loader2 className="w-8 h-8 animate-spin text-blue-500" />
-          <span className="ml-2">Loading dashboard...</span>
+        <div className="container mx-auto px-4 py-16 flex items-center justify-center">
+          <OECLoader size="lg" text="Loading dashboard..." />
         </div>
       </Layout>
     );
