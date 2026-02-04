@@ -319,8 +319,47 @@ export function Layout({
           {/* Fill space */}
           <div className="flex-1 overflow-y-auto p-4" />
 
-          {/* Bottom alert */}
+          {/* Bottom section */}
           <div className="sticky bottom-0 bg-gray-950 p-4 border-t-0 flex flex-col items-center space-y-3">
+            {/* Social & Website Button */}
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  className={`w-full flex items-center ${
+                    sidebarCollapsed ? "justify-center px-2" : "space-x-3 px-3"
+                  } py-2 rounded-lg text-left transition-colors group relative bg-gray-800 hover:bg-gradient-to-r hover:from-cyan-500 hover:to-purple-600 transition-all duration-200`}
+                  title={sidebarCollapsed ? "Social & Website" : undefined}
+                >
+                  <Globe className="w-5 h-5 text-white flex-shrink-0" />
+                  {!sidebarCollapsed && <span className="text-white">Social & Website</span>}
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent side="top" align="start" className="w-36 mb-2">
+                <DropdownMenuItem
+                  onClick={() => window.open("https://oeconomia.tech/", "_blank")}
+                  className="cursor-pointer hover:bg-gradient-to-r hover:from-cyan-500/20 hover:to-purple-600/20 transition-all duration-200"
+                >
+                  <Globe className="w-4 h-4 mr-2" />
+                  Website
+                </DropdownMenuItem>
+                {socialLinks.map((link) => (
+                  <DropdownMenuItem
+                    key={link.name}
+                    onClick={() => link.enabled && window.open(link.url, "_blank")}
+                    className={`cursor-pointer hover:bg-gradient-to-r hover:from-cyan-500/20 hover:to-purple-600/20 transition-all duration-200 ${
+                      !link.enabled ? "opacity-50" : ""
+                    }`}
+                    disabled={!link.enabled}
+                  >
+                    <link.icon className="w-4 h-4 mr-2" />
+                    {link.name}
+                  </DropdownMenuItem>
+                ))}
+              </DropdownMenuContent>
+            </DropdownMenu>
+
             {/* Oeconomia Button */}
             <Button
               variant="ghost"
@@ -442,42 +481,7 @@ export function Layout({
                   </div>
                 </div>
 
-                {/* Social menu */}
-                <DropdownMenu>
-                  <DropdownMenuTrigger asChild>
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      className="w-10 h-10 p-0 rounded-full bg-gray-800 hover:bg-gradient-to-r hover:from-cyan-500 hover:to-purple-600 transition-all duration-200"
-                      title="Social Media Links"
-                    >
-                      <Globe className="w-5 h-5 text-white" />
-                    </Button>
-                  </DropdownMenuTrigger>
-                  <DropdownMenuContent align="center" className="w-36">
-                    <DropdownMenuItem
-                      onClick={() => window.open("https://oeconomia.tech/", "_blank")}
-                      className="cursor-pointer hover:bg-gradient-to-r hover:from-cyan-500/20 hover:to-purple-600/20 transition-all duration-200"
-                    >
-                      <Globe className="w-4 h-4 mr-2" />
-                      Website
-                    </DropdownMenuItem>
-                    {socialLinks.map((link) => (
-                      <DropdownMenuItem
-                        key={link.name}
-                        onClick={() => link.enabled && window.open(link.url, "_blank")}
-                        className={`cursor-pointer hover:bg-gradient-to-r hover:from-cyan-500/20 hover:to-purple-600/20 transition-all duration-200 ${
-                          !link.enabled ? "opacity-50" : ""
-                        }`}
-                        disabled={!link.enabled}
-                      >
-                        <link.icon className="w-4 h-4 mr-2" />
-                        {link.name}
-                      </DropdownMenuItem>
-                    ))}
-                  </DropdownMenuContent>
-                </DropdownMenu>
-              </div>
+                </div>
             </div>
           </header>
 
