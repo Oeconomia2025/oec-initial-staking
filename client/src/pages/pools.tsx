@@ -407,12 +407,18 @@ export default function Pools() {
                     </div>
                   </div>
 
-                  <div className="flex items-center space-x-2 sm:space-x-4 flex-shrink-0">
+                  <div className="flex items-center space-x-6 sm:space-x-12 flex-shrink-0">
                     <div className="text-right">
                       <div className="text-base sm:text-xl font-bold">
                         {formatNumber(pool.userBalance)}
                       </div>
                       <div className="text-[0.6rem] sm:text-xs opacity-75">staked</div>
+                    </div>
+                    <div className="text-right">
+                      <div className="text-base sm:text-xl font-bold text-green-300">
+                        {formatNumber(pool.userEarned, 2)}
+                      </div>
+                      <div className="text-[0.6rem] sm:text-xs opacity-75">rewards</div>
                     </div>
                     <Badge className="bg-white/20 text-white border-white/30 text-xs sm:text-sm px-2 sm:px-3 py-1">
                       {Number(pool.aprBps) / 100}% APR
