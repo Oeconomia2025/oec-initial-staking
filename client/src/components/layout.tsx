@@ -320,13 +320,11 @@ export function Layout({
           <div className="flex-1 overflow-y-auto p-4" />
 
           {/* Bottom section */}
-          <div className="sticky bottom-0 bg-gray-950 p-4 border-t-0 flex flex-col items-center space-y-3">
+          <div className="sticky bottom-0 bg-gray-950 p-2 border-t-0 flex flex-col space-y-2">
             {/* Social & Website Button */}
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
-                <Button
-                  variant="ghost"
-                  size="sm"
+                <button
                   className={`w-full flex items-center ${
                     sidebarCollapsed ? "justify-center px-2" : "space-x-3 px-3"
                   } py-2 rounded-lg text-left transition-colors group relative bg-gray-800 hover:bg-gradient-to-r hover:from-cyan-500 hover:to-purple-600 transition-all duration-200`}
@@ -334,7 +332,12 @@ export function Layout({
                 >
                   <Globe className="w-5 h-5 text-white flex-shrink-0" />
                   {!sidebarCollapsed && <span className="text-white">Social & Website</span>}
-                </Button>
+                  {sidebarCollapsed && (
+                    <div className="absolute left-full ml-2 px-2 py-1 bg-[var(--crypto-dark)] text-white text-sm rounded opacity-0 group-hover:opacity-100 transition-opacity duration-200 pointer-events-none whitespace-nowrap z-50">
+                      Social & Website
+                    </div>
+                  )}
+                </button>
               </DropdownMenuTrigger>
               <DropdownMenuContent
                 side="top"
@@ -367,16 +370,15 @@ export function Layout({
             </DropdownMenu>
 
             {/* Oeconomia Button */}
-            <Button
-              variant="ghost"
-              size="sm"
+            <button
               onClick={() => window.open('https://oeconomia.io/', '_blank')}
-              className={`w-full flex items-left ${
-                sidebarCollapsed ? "justify-left px-1" : "space-x-3 px-3"
-              } py-2 rounded-lg text-left transition-colors group relative bg-transparent text-white hover:bg-white/5 transition-all duration-200 focus:outline-none focus:ring-0 focus:ring-offset-0 focus-visible:ring-0 border-2 border-transparent bg-gradient-to-r from-purple-500 via-blue-500 to-cyan-500 bg-clip-border`}
+              className={`w-full flex items-center ${
+                sidebarCollapsed ? "justify-center px-2" : "space-x-3 px-3"
+              } py-2 rounded-lg text-left transition-colors group relative text-white hover:bg-white/5 transition-all duration-200`}
               style={{
                 borderRadius: '5px',
-                background: 'linear-gradient(var(--background), var(--background)) padding-box, linear-gradient(45deg, #a855f7, #3b82f6, #06b6d4) border-box'
+                background: 'linear-gradient(var(--background), var(--background)) padding-box, linear-gradient(45deg, #a855f7, #3b82f6, #06b6d4) border-box',
+                border: '2px solid transparent'
               }}
               title={sidebarCollapsed ? "Oeconomia" : undefined}
             >
@@ -385,14 +387,14 @@ export function Layout({
                 alt="OEC Logo"
                 className="w-5 h-5 flex-shrink-0"
               />
-              {!sidebarCollapsed && <span className="ml-2">Oeconomia</span>}
+              {!sidebarCollapsed && <span>Oeconomia</span>}
               {sidebarCollapsed && (
                 <div className="absolute left-full ml-2 px-2 py-1 bg-[var(--crypto-dark)] text-white text-sm rounded opacity-0 group-hover:opacity-100 transition-opacity duration-200 pointer-events-none whitespace-nowrap z-50">
                   Oeconomia
                 </div>
               )}
-            </Button>
-            <WalletConnect />
+            </button>
+            <WalletConnect collapsed={sidebarCollapsed} />
           </div>
         </aside>
 

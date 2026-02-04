@@ -7,7 +7,11 @@ import { Wallet, LogOut, Copy, ExternalLink } from 'lucide-react'
 import { useToast } from '@/hooks/use-toast'
 import { WalletIcon } from './wallet-icons'
 
-export function WalletConnect() {
+interface WalletConnectProps {
+  collapsed?: boolean;
+}
+
+export function WalletConnect({ collapsed = false }: WalletConnectProps) {
   const [isOpen, setIsOpen] = useState(false)
   const [showAllWallets, setShowAllWallets] = useState(false)
   const { address, isConnected, chain } = useAccount()
@@ -79,7 +83,7 @@ export function WalletConnect() {
 
   if (isConnected && address) {
     return (
-      <Button 
+      <Button
         onClick={() => {
           // Clear localStorage wallet data
           if (typeof window !== 'undefined') {
@@ -88,24 +92,27 @@ export function WalletConnect() {
             localStorage.removeItem('wagmi.connected')
             localStorage.removeItem('wagmi.recentConnectorId')
           }
-          
+
           disconnect()
-          
+
           // Force a small delay then reload to ensure clean state
           setTimeout(() => {
             window.location.reload()
           }, 500)
-          
+
           toast({
             title: "Wallet disconnected",
             description: "Your wallet has been disconnected successfully",
           })
         }}
-        className="w-full text-white hover:text-white shadow-lg transition-all duration-200 font-medium border-0"
+        className={`w-full text-white hover:text-white shadow-lg transition-all duration-200 font-medium border-0 flex items-center ${
+          collapsed ? "justify-center px-2" : "space-x-3 px-3"
+        }`}
         style={{ background: 'linear-gradient(45deg, #00d4ff, #ff00ff)' }}
+        title={collapsed ? formatAddress(address) : undefined}
       >
-        <Wallet className="w-4 h-4 mr-2" />
-        {formatAddress(address)}
+        <Wallet className="w-5 h-5 flex-shrink-0" />
+        {!collapsed && <span>{formatAddress(address)}</span>}
       </Button>
     )
   }
@@ -113,12 +120,15 @@ export function WalletConnect() {
   return (
     <Dialog open={isOpen} onOpenChange={setIsOpen}>
       <DialogTrigger asChild>
-        <Button 
-          className="w-full text-white hover:text-white shadow-lg transition-all duration-200 font-medium border-0"
+        <Button
+          className={`w-full text-white hover:text-white shadow-lg transition-all duration-200 font-medium border-0 flex items-center ${
+            collapsed ? "justify-center px-2" : "space-x-3 px-3"
+          }`}
           style={{ background: 'linear-gradient(45deg, #00d4ff, #ff00ff)' }}
+          title={collapsed ? "Connect Wallet" : undefined}
         >
-          <Wallet className="w-4 h-4 mr-2" />
-          Connect Wallet
+          <Wallet className="w-5 h-5 flex-shrink-0" />
+          {!collapsed && <span>Connect Wallet</span>}
         </Button>
       </DialogTrigger>
       <DialogContent className="bg-gradient-to-br from-[var(--crypto-card)] to-[var(--crypto-dark)] border-crypto-blue/20 shadow-xl max-w-sm max-h-[90vh] overflow-y-auto">
