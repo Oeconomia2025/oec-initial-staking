@@ -99,6 +99,9 @@ export function Layout({
     tvl: 0n,
   });
 
+  // Token price (will be 0 until mainnet launch)
+  const tokenPrice = 0;
+
   const publicClient = usePublicClient();
 
   const [location, navigate] = useLocation();
@@ -190,6 +193,28 @@ export function Layout({
     if (n >= 1_000) return `${(n / 1_000).toFixed(1)}K`;
     return n.toLocaleString('en-US', { maximumFractionDigits: 0 });
   };
+
+  // Format price with dynamic decimals (6 for small, reducing as price grows)
+  const formatPrice = (price: number) => {
+    if (price >= 100) return price.toFixed(2);
+    if (price >= 10) return price.toFixed(2);
+    if (price >= 1) return price.toFixed(2);
+    if (price >= 0.1) return price.toFixed(3);
+    if (price >= 0.01) return price.toFixed(4);
+    if (price >= 0.001) return price.toFixed(5);
+    return price.toFixed(6);
+  };
+
+  // Format dollar value with commas and 2 decimals
+  const formatDollarValue = (value: number) => {
+    return value.toLocaleString('en-US', {
+      minimumFractionDigits: 2,
+      maximumFractionDigits: 2,
+    });
+  };
+
+  // Calculate TVL in dollars
+  const tvlInDollars = Number(formatEther(tokenStats.tvl)) * tokenPrice;
 
   const handleNavigation = (path: string) => {
     const wasCollapsed = sidebarCollapsed;
@@ -404,13 +429,16 @@ export function Layout({
                 {/* Stats pills */}
                 <div className="hidden md:flex items-center gap-2">
                   <div className="bg-gray-800 rounded-full px-5 py-1 text-xs font-medium text-cyan-400 border border-cyan-400/30">
-                    Price: $0.00
+                    Price: ${formatPrice(tokenPrice)}
                   </div>
                   <div className="bg-gray-800 rounded-full px-3 py-1 text-xs font-medium text-cyan-400 border border-cyan-400/30">
                     Supply: {formatLargeNumber(tokenStats.totalSupply)}
                   </div>
                   <div className="bg-gray-800 rounded-full px-5 py-1 text-xs font-medium text-cyan-400 border border-cyan-400/30">
-                    TVL: {formatLargeNumber(tokenStats.tvl)} OEC
+                    OEC Locked: {formatLargeNumber(tokenStats.tvl)}
+                  </div>
+                  <div className="bg-gray-800 rounded-full px-5 py-1 text-xs font-medium text-cyan-400 border border-cyan-400/30">
+                    TVL: ${formatDollarValue(tvlInDollars)}
                   </div>
                 </div>
 
