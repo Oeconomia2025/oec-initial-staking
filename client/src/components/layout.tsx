@@ -336,13 +336,19 @@ export function Layout({
                   {!sidebarCollapsed && <span className="text-white">Social & Website</span>}
                 </Button>
               </DropdownMenuTrigger>
-              <DropdownMenuContent side="top" align="start" className="w-36 mb-2">
+              <DropdownMenuContent
+                side="top"
+                align="start"
+                className={`mb-2 ${sidebarCollapsed ? "w-[calc(4rem-2rem)]" : "w-[calc(12rem-2rem)]"}`}
+              >
                 <DropdownMenuItem
                   onClick={() => window.open("https://oeconomia.tech/", "_blank")}
-                  className="cursor-pointer hover:bg-gradient-to-r hover:from-cyan-500/20 hover:to-purple-600/20 transition-all duration-200"
+                  className={`cursor-pointer hover:bg-gradient-to-r hover:from-cyan-500/20 hover:to-purple-600/20 transition-all duration-200 ${
+                    sidebarCollapsed ? "justify-center px-2" : "px-3"
+                  }`}
                 >
-                  <Globe className="w-4 h-4 mr-2" />
-                  Website
+                  <Globe className={`w-5 h-5 flex-shrink-0 ${sidebarCollapsed ? "" : "mr-3"}`} />
+                  {!sidebarCollapsed && <span>Website</span>}
                 </DropdownMenuItem>
                 {socialLinks.map((link) => (
                   <DropdownMenuItem
@@ -350,11 +356,11 @@ export function Layout({
                     onClick={() => link.enabled && window.open(link.url, "_blank")}
                     className={`cursor-pointer hover:bg-gradient-to-r hover:from-cyan-500/20 hover:to-purple-600/20 transition-all duration-200 ${
                       !link.enabled ? "opacity-50" : ""
-                    }`}
+                    } ${sidebarCollapsed ? "justify-center px-2" : "px-3"}`}
                     disabled={!link.enabled}
                   >
-                    <link.icon className="w-4 h-4 mr-2" />
-                    {link.name}
+                    <link.icon className={`w-5 h-5 flex-shrink-0 ${sidebarCollapsed ? "" : "mr-3"}`} />
+                    {!sidebarCollapsed && <span>{link.name}</span>}
                   </DropdownMenuItem>
                 ))}
               </DropdownMenuContent>
