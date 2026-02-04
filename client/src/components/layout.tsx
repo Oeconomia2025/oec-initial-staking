@@ -252,6 +252,17 @@ export function Layout({
 
   return (
     <>
+      {/* Collapse/Expand button - outside all containers for true fixed positioning */}
+      <button
+        onClick={toggleCollapsed}
+        className={`hidden lg:flex fixed top-[29px] z-[60] w-6 h-6 bg-gray-800 border border-gray-600 rounded-full items-center justify-center hover:bg-gray-700 transition-all duration-300 ${
+          sidebarCollapsed ? "left-[52px]" : "left-[180px]"
+        }`}
+        title={sidebarCollapsed ? "Expand sidebar" : "Collapse sidebar"}
+      >
+        {sidebarCollapsed ? <ChevronRight className="w-3 h-3" /> : <ChevronLeft className="w-3 h-3" />}
+      </button>
+
       {/* Root: sidebar + main column in the SAME flex row */}
       <div className="min-h-screen bg-background text-foreground flex">
         {/* Sidebar */}
@@ -260,18 +271,8 @@ export function Layout({
             sidebarCollapsed ? "w-16" : "w-48"
           } bg-gray-950 border-r border-gray-700 transform ${
             sidebarOpen ? "translate-x-0" : "-translate-x-full"
-          } transition-all duration-300 ease-in-out lg:translate-x-0 lg:static lg:inset-0 flex flex-col shadow-xl shadow-black/70 overflow-visible`}
+          } transition-all duration-300 ease-in-out lg:translate-x-0 lg:static lg:inset-0 flex flex-col shadow-xl shadow-black/70`}
         >
-          {/* Collapse/Expand button on outer edge at top */}
-          <button
-            onClick={toggleCollapsed}
-            className={`hidden lg:flex fixed top-[29px] z-[60] w-6 h-6 bg-gray-800 border border-gray-600 rounded-full items-center justify-center hover:bg-gray-700 transition-all duration-300 ${
-              sidebarCollapsed ? "left-[52px]" : "left-[180px]"
-            }`}
-            title={sidebarCollapsed ? "Expand sidebar" : "Collapse sidebar"}
-          >
-            {sidebarCollapsed ? <ChevronRight className="w-3 h-3" /> : <ChevronLeft className="w-3 h-3" />}
-          </button>
           {/* Sidebar header */}
           <div className="sticky top-0 z-10 bg-gray-950 flex items-center justify-between h-20 px-4 border-b-0">
             <div className={`flex items-center ${sidebarCollapsed ? "justify-center w-full" : "space-x-3"}`}>
