@@ -262,6 +262,14 @@ export function Layout({
             sidebarOpen ? "translate-x-0" : "-translate-x-full"
           } transition-all duration-300 ease-in-out lg:translate-x-0 lg:static lg:inset-0 flex flex-col shadow-xl shadow-black/70`}
         >
+          {/* Collapse/Expand button on outer edge */}
+          <button
+            onClick={toggleCollapsed}
+            className="hidden lg:flex absolute top-1/2 -right-3 transform -translate-y-1/2 z-50 w-6 h-6 bg-gray-800 border border-gray-600 rounded-full items-center justify-center hover:bg-gray-700 transition-colors"
+            title={sidebarCollapsed ? "Expand sidebar" : "Collapse sidebar"}
+          >
+            {sidebarCollapsed ? <ChevronRight className="w-3 h-3" /> : <ChevronLeft className="w-3 h-3" />}
+          </button>
           {/* Sidebar header */}
           <div className="sticky top-0 z-10 bg-gray-950 flex items-center justify-between h-20 px-4 border-b-0">
             <div className={`flex items-center ${sidebarCollapsed ? "justify-center w-full" : "space-x-3"}`}>
@@ -274,14 +282,9 @@ export function Layout({
                 </div>
               )}
             </div>
-            <div className="flex items-center space-x-1">
-              <Button variant="ghost" size="sm" onClick={toggleCollapsed} className="hidden lg:flex">
-                {sidebarCollapsed ? <ChevronRight className="w-4 h-4" /> : <ChevronLeft className="w-4 h-4" />}
-              </Button>
-              <Button variant="ghost" size="sm" onClick={() => setSidebarOpen(false)} className="lg:hidden">
-                <X className="w-4 h-4" />
-              </Button>
-            </div>
+            <Button variant="ghost" size="sm" onClick={() => setSidebarOpen(false)} className="lg:hidden">
+              <X className="w-4 h-4" />
+            </Button>
           </div>
 
           {/* Sidebar nav */}
