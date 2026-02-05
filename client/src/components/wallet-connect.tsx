@@ -105,7 +105,7 @@ export function WalletConnect({ collapsed = false }: WalletConnectProps) {
             description: "Your wallet has been disconnected successfully",
           })
         }}
-        className={`w-full text-white hover:text-white shadow-lg transition-all duration-200 font-medium border-0 flex items-center ${
+        className={`w-full text-white hover:text-white shadow-lg transition-all duration-200 font-medium border-0 flex items-center rounded-lg py-2 ${
           collapsed ? "justify-center px-2" : "space-x-3 px-3"
         }`}
         style={{ background: 'linear-gradient(45deg, #00d4ff, #ff00ff)' }}
@@ -121,7 +121,7 @@ export function WalletConnect({ collapsed = false }: WalletConnectProps) {
     <Dialog open={isOpen} onOpenChange={setIsOpen}>
       <DialogTrigger asChild>
         <Button
-          className={`w-full text-white hover:text-white shadow-lg transition-all duration-200 font-medium border-0 flex items-center ${
+          className={`w-full text-white hover:text-white shadow-lg transition-all duration-200 font-medium border-0 flex items-center rounded-lg py-2 ${
             collapsed ? "justify-center px-2" : "space-x-3 px-3"
           }`}
           style={{ background: 'linear-gradient(45deg, #00d4ff, #ff00ff)' }}
