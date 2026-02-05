@@ -327,20 +327,20 @@ export function Layout({
 
           {/* Bottom section */}
           <div className="sticky bottom-0 bg-gray-950 p-2 border-t-0 flex flex-col space-y-2">
-            {/* Social & Website Button */}
+            {/* Links Button */}
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
                 <button
                   className={`w-full flex items-center ${
                     sidebarCollapsed ? "justify-center px-2" : "space-x-3 px-3"
                   } py-2 rounded-lg text-left transition-colors group relative bg-gray-800 hover:bg-gradient-to-r hover:from-cyan-500 hover:to-purple-600 transition-all duration-200`}
-                  title={sidebarCollapsed ? "Social & Website" : undefined}
+                  title={sidebarCollapsed ? "Links" : undefined}
                 >
                   <Globe className="w-5 h-5 text-white flex-shrink-0" />
-                  {!sidebarCollapsed && <span className="text-white">Social & Website</span>}
+                  {!sidebarCollapsed && <span className="text-white">Links</span>}
                   {sidebarCollapsed && (
                     <div className="absolute left-full ml-2 px-2 py-1 bg-[var(--crypto-dark)] text-white text-sm rounded opacity-0 group-hover:opacity-100 transition-opacity duration-200 pointer-events-none whitespace-nowrap z-50">
-                      Social & Website
+                      Links
                     </div>
                   )}
                 </button>
