@@ -59,7 +59,8 @@ export default function Dashboard() {
   const publicClient = usePublicClient();
   const { switchChain } = useSwitchChain();
 
-  const isCorrectNetwork = chain?.id === sepolia.id;
+  // Check if on correct network - must be defined AND be sepolia
+  const isCorrectNetwork = Boolean(chain && chain.id === sepolia.id);
 
   const [initialLoading, setInitialLoading] = useState(true);
   const [stats, setStats] = useState<UserStats>({

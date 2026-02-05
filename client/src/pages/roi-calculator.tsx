@@ -33,7 +33,8 @@ export default function ROICalculator() {
   const publicClient = usePublicClient();
   const { switchChain } = useSwitchChain();
 
-  const isCorrectNetwork = chain?.id === sepolia.id;
+  // Check if on correct network - must be defined AND be sepolia
+  const isCorrectNetwork = Boolean(chain && chain.id === sepolia.id);
 
   const [loading, setLoading] = useState(true);
   const [pools, setPools] = useState<Pool[]>([]);

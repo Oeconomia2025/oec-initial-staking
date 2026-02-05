@@ -43,7 +43,8 @@ export default function Pools() {
   const { data: walletClient } = useWalletClient();
   const { switchChain } = useSwitchChain();
 
-  const isCorrectNetwork = chain?.id === sepolia.id;
+  // Check if on correct network - must be defined AND be sepolia
+  const isCorrectNetwork = Boolean(chain && chain.id === sepolia.id);
 
   const [expandedPool, setExpandedPool] = useState<number | null>(null);
   const [activeTab, setActiveTab] = useState<{ [key: number]: string }>({});
