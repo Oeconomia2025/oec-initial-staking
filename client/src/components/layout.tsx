@@ -9,9 +9,10 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { Card } from "@/components/ui/card";
 import { WalletConnect } from "@/components/wallet-connect";
-import { usePublicClient } from "wagmi";
+import { usePublicClient, useAccount } from "wagmi";
 import { formatEther } from "viem";
 import ERC20ABI from "@/services/abis/ERC20.json";
+import MultiPoolStakingAPRABI from "@/services/abis/MultiPoolStakingAPR.json";
 
 // Contract addresses on Sepolia
 const OEC_TOKEN = "0x2b2fb8df4ac5d394f0d5674d7a54802e42a06aba";
@@ -30,6 +31,8 @@ import {
   Globe,
   AlertTriangle,
   Heart,
+  Shield,
+  Droplets,
 } from "lucide-react";
 import { SiX, SiMedium, SiYoutube, SiDiscord, SiGithub, SiTelegram } from "react-icons/si";
 
@@ -63,6 +66,14 @@ const pageInfo = {
   "/calculator": {
     title: "ROI Calculator",
     description: "Calculate your potential staking rewards and strategize",
+  },
+  "/faucet": {
+    title: "Testnet Faucet",
+    description: "Get test OEC tokens on Sepolia",
+  },
+  "/admin": {
+    title: "Admin Panel",
+    description: "Manage staking pools and contract settings",
   },
 } as const;
 
@@ -103,6 +114,8 @@ export function Layout({
   const tokenPrice = 0;
 
   const publicClient = usePublicClient();
+  const { address } = useAccount();
+  const [isOwner, setIsOwner] = useState(false);
 
   const [location, navigate] = useLocation();
   const isNavigatingRef = useRef(false);
@@ -185,6 +198,30 @@ export function Layout({
     return () => clearInterval(interval);
   }, [publicClient]);
 
+  // Check if user is contract owner
+  useEffect(() => {
+    const checkOwner = async () => {
+      if (!publicClient || !address) {
+        setIsOwner(false);
+        return;
+      }
+
+      try {
+        const owner = await publicClient.readContract({
+          address: STAKING_CONTRACT,
+          abi: MultiPoolStakingAPRABI,
+          functionName: "owner",
+        }) as string;
+        setIsOwner(address.toLowerCase() === owner.toLowerCase());
+      } catch (error) {
+        console.error("Error checking owner:", error);
+        setIsOwner(false);
+      }
+    };
+
+    checkOwner();
+  }, [publicClient, address]);
+
   // Format large numbers with abbreviations
   const formatLargeNumber = (num: bigint) => {
     const n = Number(formatEther(num));
@@ -248,6 +285,8 @@ export function Layout({
     { icon: BarChart3, label: "Dashboard", path: "/", active: location === "/" || location === "/dashboard" },
     { icon: Lock, label: "Staking Pools", path: "/pools", active: location === "/pools" },
     { icon: Calculator, label: "ROI Calc", path: "/calculator", active: location === "/calculator" },
+    { icon: Droplets, label: "Faucet", path: "/faucet", active: location === "/faucet" },
+    ...(isOwner ? [{ icon: Shield, label: "Admin", path: "/admin", active: location === "/admin" }] : []),
   ];
 
   return (

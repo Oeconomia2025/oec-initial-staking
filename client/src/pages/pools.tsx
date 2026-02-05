@@ -14,9 +14,11 @@ import {
 } from "lucide-react";
 import { WalletConnect } from "@/components/wallet-connect";
 import { OECLoader } from "@/components/oec-loader";
+import { EarlyWithdrawModal } from "@/components/early-withdraw-modal";
+import { useToast } from "@/hooks/use-toast";
 import { useAccount, usePublicClient, useWalletClient, useSwitchChain } from "wagmi";
 import { sepolia } from "wagmi/chains";
-import { parseEther, formatEther } from "viem";
+import { parseEther, formatEther, parseAbiItem } from "viem";
 import MultiPoolStakingAPRABI from "@/services/abis/MultiPoolStakingAPR.json";
 import ERC20ABI from "@/services/abis/ERC20.json";
 
@@ -42,6 +44,7 @@ export default function Pools() {
   const publicClient = usePublicClient();
   const { data: walletClient } = useWalletClient();
   const { switchChain } = useSwitchChain();
+  const { toast } = useToast();
 
   // Check if on correct network - must be defined AND be sepolia
   const isCorrectNetwork = Boolean(chain && chain.id === sepolia.id);
@@ -55,6 +58,15 @@ export default function Pools() {
   const [allowance, setAllowance] = useState<bigint>(0n);
   const [loading, setLoading] = useState(true);
   const [txPending, setTxPending] = useState(false);
+  const [depositTimestamps, setDepositTimestamps] = useState<{ [poolId: number]: bigint }>({});
+  const [earlyPenaltyBps, setEarlyPenaltyBps] = useState<{ [poolId: number]: bigint }>({});
+  const [earlyWithdrawModal, setEarlyWithdrawModal] = useState<{
+    isOpen: boolean;
+    poolId: number | null;
+    poolName: string;
+    amount: bigint;
+    penaltyBps: bigint;
+  }>({ isOpen: false, poolId: null, poolName: "", amount: 0n, penaltyBps: 1000n });
 
   // Fetch pool count and data
   useEffect(() => {
@@ -153,6 +165,48 @@ export default function Pools() {
           }) as bigint;
           setAllowance(allow);
         }
+
+        // Fetch early penalty BPS for each pool
+        const penaltyBpsData: { [poolId: number]: bigint } = {};
+        for (let i = 0; i < Number(count); i++) {
+          try {
+            const penaltyBps = await publicClient.readContract({
+              address: STAKING_CONTRACT,
+              abi: MultiPoolStakingAPRABI,
+              functionName: "earlyPenaltyBps",
+              args: [BigInt(i)],
+            }) as bigint;
+            penaltyBpsData[i] = penaltyBps;
+          } catch {
+            penaltyBpsData[i] = 1000n; // Default 10%
+          }
+        }
+        setEarlyPenaltyBps(penaltyBpsData);
+
+        // Fetch deposit timestamps from Staked events
+        if (address) {
+          try {
+            const logs = await publicClient.getLogs({
+              address: STAKING_CONTRACT,
+              event: parseAbiItem('event Staked(uint256 indexed poolId, address indexed user, uint256 creditedAmount)'),
+              args: { user: address },
+              fromBlock: 0n,
+              toBlock: 'latest'
+            });
+
+            // Get the most recent stake timestamp for each pool
+            const timestamps: { [poolId: number]: bigint } = {};
+            for (const log of logs) {
+              const poolId = Number(log.args.poolId);
+              // Get the block to retrieve timestamp
+              const block = await publicClient.getBlock({ blockNumber: log.blockNumber });
+              timestamps[poolId] = block.timestamp;
+            }
+            setDepositTimestamps(timestamps);
+          } catch (error) {
+            console.error("Error fetching stake events:", error);
+          }
+        }
       } catch (error) {
         console.error("Error fetching pools:", error);
       } finally {
@@ -179,6 +233,34 @@ export default function Pools() {
     return `${Math.floor(s / 86400)} days`;
   };
 
+  const getUnlockStatus = (poolId: number, lockPeriod: bigint) => {
+    const lockSeconds = Number(lockPeriod);
+    if (lockSeconds === 0) return { unlocked: true, text: "Flexible", color: "text-green-400" };
+
+    const depositTime = depositTimestamps[poolId];
+    if (!depositTime) return { unlocked: true, text: "No deposit", color: "text-gray-400" };
+
+    const unlockTime = Number(depositTime) + lockSeconds;
+    const now = Math.floor(Date.now() / 1000);
+    const remaining = unlockTime - now;
+
+    if (remaining <= 0) {
+      return { unlocked: true, text: "Unlocked", color: "text-green-400" };
+    }
+
+    // Format remaining time
+    const days = Math.floor(remaining / 86400);
+    const hours = Math.floor((remaining % 86400) / 3600);
+    const minutes = Math.floor((remaining % 3600) / 60);
+
+    let text = "Unlocks in ";
+    if (days > 0) text += `${days}d `;
+    if (hours > 0) text += `${hours}h `;
+    if (days === 0 && minutes > 0) text += `${minutes}m`;
+
+    return { unlocked: false, text: text.trim(), color: "text-yellow-400" };
+  };
+
   const toggleExpand = (poolId: number) => {
     setExpandedPool(expandedPool === poolId ? null : poolId);
     if (!activeTab[poolId]) {
@@ -199,6 +281,8 @@ export default function Pools() {
 
     try {
       setTxPending(true);
+      toast({ title: "Approving OEC...", description: "Please confirm in your wallet" });
+
       const hash = await walletClient.writeContract({
         address: OEC_TOKEN,
         abi: ERC20ABI,
@@ -208,8 +292,10 @@ export default function Pools() {
 
       await publicClient?.waitForTransactionReceipt({ hash });
       setAllowance(parseEther("1000000000"));
+      toast({ title: "OEC Approved!", description: "You can now stake your tokens" });
     } catch (error) {
       console.error("Approval failed:", error);
+      toast({ title: "Approval failed", description: "Transaction was rejected or failed", variant: "destructive" });
     } finally {
       setTxPending(false);
     }
@@ -221,6 +307,7 @@ export default function Pools() {
     try {
       setTxPending(true);
       const amount = parseEther(stakeAmount[poolId]);
+      toast({ title: "Staking OEC...", description: "Please confirm in your wallet" });
 
       const hash = await walletClient.writeContract({
         address: STAKING_CONTRACT,
@@ -230,11 +317,13 @@ export default function Pools() {
       });
 
       await publicClient?.waitForTransactionReceipt({ hash });
+      toast({ title: "Successfully staked!", description: `${stakeAmount[poolId]} OEC has been staked` });
 
       // Refresh data
       window.location.reload();
     } catch (error) {
       console.error("Stake failed:", error);
+      toast({ title: "Stake failed", description: "Transaction was rejected or failed", variant: "destructive" });
     } finally {
       setTxPending(false);
     }
@@ -246,6 +335,7 @@ export default function Pools() {
     try {
       setTxPending(true);
       const amount = parseEther(stakeAmount[poolId]);
+      toast({ title: "Withdrawing...", description: "Please confirm in your wallet" });
 
       const hash = await walletClient.writeContract({
         address: STAKING_CONTRACT,
@@ -255,34 +345,59 @@ export default function Pools() {
       });
 
       await publicClient?.waitForTransactionReceipt({ hash });
+      toast({ title: "Successfully withdrew!", description: `${stakeAmount[poolId]} OEC has been withdrawn` });
       window.location.reload();
     } catch (error) {
       console.error("Withdraw failed:", error);
+      toast({ title: "Withdraw failed", description: "Transaction was rejected or failed", variant: "destructive" });
     } finally {
       setTxPending(false);
     }
   };
 
-  const handleEarlyWithdraw = async (poolId: number) => {
-    if (!walletClient || !address) return;
-
+  const openEarlyWithdrawModal = (poolId: number) => {
     const pool = pools.find(p => p.id === poolId);
+    if (!pool || pool.userBalance === 0n) return;
+
+    setEarlyWithdrawModal({
+      isOpen: true,
+      poolId,
+      poolName: pool.name,
+      amount: pool.userBalance,
+      penaltyBps: earlyPenaltyBps[poolId] || 1000n,
+    });
+  };
+
+  const handleEarlyWithdrawConfirm = async () => {
+    if (!walletClient || !address || earlyWithdrawModal.poolId === null) return;
+
+    const pool = pools.find(p => p.id === earlyWithdrawModal.poolId);
     if (!pool || pool.userBalance === 0n) return;
 
     try {
       setTxPending(true);
+      setEarlyWithdrawModal(prev => ({ ...prev, isOpen: false }));
+      toast({ title: "Processing early withdrawal...", description: "Please confirm in your wallet" });
 
       const hash = await walletClient.writeContract({
         address: STAKING_CONTRACT,
         abi: MultiPoolStakingAPRABI,
         functionName: "earlyWithdraw",
-        args: [BigInt(poolId), pool.userBalance],
+        args: [BigInt(earlyWithdrawModal.poolId!), pool.userBalance],
       });
 
       await publicClient?.waitForTransactionReceipt({ hash });
+
+      const penaltyAmount = (pool.userBalance * earlyWithdrawModal.penaltyBps) / 10000n;
+      const receivedAmount = pool.userBalance - penaltyAmount;
+      toast({
+        title: "Early withdrawal complete!",
+        description: `Received ${formatNumber(receivedAmount)} OEC (${formatNumber(penaltyAmount)} penalty)`
+      });
       window.location.reload();
     } catch (error) {
       console.error("Early withdraw failed:", error);
+      toast({ title: "Early withdraw failed", description: "Transaction was rejected or failed", variant: "destructive" });
     } finally {
       setTxPending(false);
     }
@@ -291,8 +406,11 @@ export default function Pools() {
   const handleClaimRewards = async (poolId: number) => {
     if (!walletClient || !address) return;
 
+    const pool = pools.find(p => p.id === poolId);
+
     try {
       setTxPending(true);
+      toast({ title: "Claiming rewards...", description: "Please confirm in your wallet" });
 
       const hash = await walletClient.writeContract({
         address: STAKING_CONTRACT,
@@ -302,9 +420,14 @@ export default function Pools() {
       });
 
       await publicClient?.waitForTransactionReceipt({ hash });
+      toast({
+        title: "Rewards claimed!",
+        description: `Claimed ${pool ? formatNumber(pool.userEarned) : ''} OEC rewards`
+      });
       window.location.reload();
     } catch (error) {
       console.error("Claim failed:", error);
+      toast({ title: "Claim failed", description: "Transaction was rejected or failed", variant: "destructive" });
     } finally {
       setTxPending(false);
     }
@@ -402,6 +525,14 @@ export default function Pools() {
                       <div className="flex items-center space-x-1 text-[0.6rem] sm:text-xs opacity-90">
                         <Clock className="w-2 h-2 sm:w-3 sm:h-3 flex-shrink-0" />
                         <span className="truncate">{formatLockPeriod(pool.lockPeriod)}</span>
+                        {pool.userBalance > 0n && (
+                          <>
+                            <span className="hidden sm:inline">—</span>
+                            <span className={`hidden sm:inline ${getUnlockStatus(pool.id, pool.lockPeriod).color}`}>
+                              {getUnlockStatus(pool.id, pool.lockPeriod).text}
+                            </span>
+                          </>
+                        )}
                         <span className="hidden sm:inline">—</span>
                         <span className="hidden sm:inline">{formatNumber(pool.totalSupply)} staked</span>
                       </div>
@@ -459,7 +590,7 @@ export default function Pools() {
                           variant="outline"
                           size="sm"
                           className="bg-red-900 text-white-400 hover:bg-red-500/10 text-[0.6rem] sm:text-xs h-7"
-                          onClick={() => handleEarlyWithdraw(pool.id)}
+                          onClick={() => openEarlyWithdrawModal(pool.id)}
                           disabled={txPending || pool.userBalance === 0n}
                         >
                           {txPending ? <Loader2 className="w-3 h-3 animate-spin" /> : "Early Withdraw"}
@@ -724,6 +855,16 @@ export default function Pools() {
           </div>
         </Card>
       </div>
+
+      {/* Early Withdraw Confirmation Modal */}
+      <EarlyWithdrawModal
+        isOpen={earlyWithdrawModal.isOpen}
+        onClose={() => setEarlyWithdrawModal(prev => ({ ...prev, isOpen: false }))}
+        onConfirm={handleEarlyWithdrawConfirm}
+        amount={earlyWithdrawModal.amount}
+        penaltyBps={earlyWithdrawModal.penaltyBps}
+        poolName={earlyWithdrawModal.poolName}
+      />
     </Layout>
   );
 }

@@ -8,6 +8,8 @@ import { ErrorBoundary } from "@/components/error-boundary";
 import Dashboard from "@/pages/dashboard";
 import Pools from "@/pages/pools";
 import ROICalculator from "@/pages/roi-calculator";
+import Admin from "@/pages/admin";
+import Faucet from "@/pages/faucet";
 import NotFound from "@/pages/not-found";
 
 function Router() {
@@ -17,6 +19,8 @@ function Router() {
       <Route path="/dashboard" component={Dashboard} />
       <Route path="/pools" component={Pools} />
       <Route path="/calculator" component={ROICalculator} />
+      <Route path="/admin" component={Admin} />
+      <Route path="/faucet" component={Faucet} />
       <Route component={NotFound} />
     </Switch>
   );
