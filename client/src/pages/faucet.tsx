@@ -21,6 +21,7 @@ import { sepolia } from "wagmi/chains";
 import { formatEther } from "viem";
 import ERC20ABI from "@/services/abis/ERC20.json";
 import OECFaucetABI from "@/services/abis/OECFaucet.json";
+import MultiPoolStakingAPRABI from "@/services/abis/MultiPoolStakingAPR.json";
 
 // Contract addresses on Sepolia
 const OEC_TOKEN = "0x2b2fb8df4ac5d394f0d5674d7a54802e42a06aba";
@@ -99,14 +100,35 @@ export default function Faucet() {
           }
         }
 
-        // Fetch staking contract rewards balance
+        // Fetch staking contract rewards balance (total OEC - total staked)
         const stakingBal = await publicClient.readContract({
           address: OEC_TOKEN,
           abi: ERC20ABI,
           functionName: "balanceOf",
           args: [STAKING_CONTRACT],
         }) as bigint;
-        setStakingRewardsBalance(stakingBal);
+
+        // Get total staked across all pools
+        const poolCount = await publicClient.readContract({
+          address: STAKING_CONTRACT,
+          abi: MultiPoolStakingAPRABI,
+          functionName: "poolCount",
+        }) as bigint;
+
+        let totalStaked = 0n;
+        for (let i = 0; i < Number(poolCount); i++) {
+          const poolInfo = await publicClient.readContract({
+            address: STAKING_CONTRACT,
+            abi: MultiPoolStakingAPRABI,
+            functionName: "getPoolInfo",
+            args: [i],
+          }) as [string, string, bigint, bigint, bigint, bigint, bigint];
+          // totalSupply is the 5th element (index 4)
+          totalStaked += poolInfo[4];
+        }
+
+        // Rewards balance = total OEC balance - total staked
+        setStakingRewardsBalance(stakingBal - totalStaked);
       } catch (error) {
         console.error("Error fetching data:", error);
       } finally {
