@@ -588,14 +588,14 @@ export default function Pools() {
                     </div>
                   </div>
 
-                  <div className="flex items-center space-x-6 sm:space-x-12 flex-shrink-0">
-                    <div className="text-right">
+                  <div className="flex items-center space-x-4 sm:space-x-6 flex-shrink-0">
+                    <div className="text-right min-w-[70px] sm:min-w-[100px]">
                       <div className="text-base sm:text-xl font-bold">
                         {formatNumber(pool.userBalance)}
                       </div>
                       <div className="text-[0.6rem] sm:text-xs opacity-75">staked</div>
                     </div>
-                    <div className="text-right">
+                    <div className="text-right min-w-[70px] sm:min-w-[100px]">
                       <div className="text-base sm:text-xl font-bold text-green-300">
                         {formatNumber(pool.userEarned, 2)}
                       </div>
