@@ -116,6 +116,8 @@ export function Layout({
   const publicClient = usePublicClient();
   const { address } = useAccount();
   const [isOwner, setIsOwner] = useState(false);
+  const lastCheckedAddressRef = useRef<string | null>(null);
+  const ownerCheckInitialized = useRef(false);
 
   const [location, navigate] = useLocation();
   const isNavigatingRef = useRef(false);
@@ -198,13 +200,34 @@ export function Layout({
     return () => clearInterval(interval);
   }, [publicClient]);
 
-  // Check if user is contract owner
+  // Check if user is contract owner - synchronously load cached value first
   useEffect(() => {
-    const checkOwner = async () => {
-      if (!publicClient || !address) {
-        setIsOwner(false);
-        return;
+    if (!address) {
+      setIsOwner(false);
+      lastCheckedAddressRef.current = null;
+      return;
+    }
+
+    const addressLower = address.toLowerCase();
+
+    // Load cached value immediately (synchronous) to prevent flash
+    if (!ownerCheckInitialized.current || lastCheckedAddressRef.current !== addressLower) {
+      const cached = localStorage.getItem(`oec-owner-${addressLower}`);
+      if (cached !== null) {
+        setIsOwner(cached === "true");
+        lastCheckedAddressRef.current = addressLower;
+        ownerCheckInitialized.current = true;
       }
+    }
+
+    // Skip async check if we already verified this address
+    if (lastCheckedAddressRef.current === addressLower && ownerCheckInitialized.current) {
+      return;
+    }
+
+    // Async check against contract
+    const checkOwner = async () => {
+      if (!publicClient) return;
 
       try {
         const owner = await publicClient.readContract({
@@ -212,10 +235,13 @@ export function Layout({
           abi: MultiPoolStakingAPRABI,
           functionName: "owner",
         }) as string;
-        setIsOwner(address.toLowerCase() === owner.toLowerCase());
+        const ownerMatch = addressLower === owner.toLowerCase();
+        lastCheckedAddressRef.current = addressLower;
+        ownerCheckInitialized.current = true;
+        localStorage.setItem(`oec-owner-${addressLower}`, String(ownerMatch));
+        setIsOwner(ownerMatch);
       } catch (error) {
         console.error("Error checking owner:", error);
-        setIsOwner(false);
       }
     };
 
@@ -286,7 +312,7 @@ export function Layout({
     { icon: Lock, label: "Staking Pools", path: "/pools", active: location === "/pools" },
     { icon: Calculator, label: "ROI Calc", path: "/calculator", active: location === "/calculator" },
     { icon: Droplets, label: "Faucet", path: "/faucet", active: location === "/faucet" },
-    ...(isOwner ? [{ icon: Shield, label: "Admin", path: "/admin", active: location === "/admin" }] : []),
+    ...(address && isOwner ? [{ icon: Shield, label: "Admin", path: "/admin", active: location === "/admin" }] : []),
   ];
 
   return (
