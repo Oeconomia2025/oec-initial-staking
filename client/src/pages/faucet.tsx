@@ -290,7 +290,7 @@ export default function Faucet() {
           <div className="space-y-4">
             {/* Request Form */}
             {isConnected && isCorrectNetwork && (
-              <Card className="crypto-card p-6 bg-card/80">
+              <Card className="crypto-card p-6 bg-gray-900/80">
                 <div className="space-y-4">
                   <div className="flex items-center justify-between">
                     <div>
@@ -361,7 +361,7 @@ export default function Faucet() {
             )}
 
             {/* Need Sepolia ETH */}
-            <Card className="crypto-card p-4 bg-card/50">
+            <Card className="crypto-card p-4 bg-gray-900/50">
               <h3 className="text-sm font-semibold mb-2">Need Sepolia ETH?</h3>
               <p className="text-xs text-gray-400 mb-2">
                 You'll need Sepolia ETH for gas fees to claim tokens.
@@ -377,7 +377,7 @@ export default function Faucet() {
             </Card>
 
             {/* Token Contract */}
-            <Card className="crypto-card p-4 bg-card/50">
+            <Card className="crypto-card p-4 bg-gray-900/50">
               <h3 className="text-xs font-semibold mb-2">OEC Token Contract (Sepolia)</h3>
               <div className="flex items-center justify-between">
                 <a
@@ -416,7 +416,7 @@ export default function Faucet() {
               </>
             )}
 
-            <Card className="crypto-card p-4 bg-card/50">
+            <Card className="crypto-card p-4 bg-gray-900/50">
               <h3 className="text-sm font-semibold mb-2">How it works</h3>
               <ul className="text-xs text-gray-400 space-y-1">
                 <li>1. Connect your wallet</li>
@@ -429,7 +429,7 @@ export default function Faucet() {
 
             {/* Faucet Contract Info */}
             {isFaucetDeployed && (
-              <Card className="crypto-card p-4 bg-card/50">
+              <Card className="crypto-card p-4 bg-gray-900/50">
                 <h3 className="text-xs font-semibold mb-2">Faucet Contract</h3>
                 <p className="text-xs text-gray-400 mb-2">
                   Send OEC here to refill the faucet.

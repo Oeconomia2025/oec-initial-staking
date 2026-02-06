@@ -422,7 +422,7 @@ export default function Dashboard() {
                     .map((pool) => (
                       <div
                         key={pool.poolId}
-                        className="flex items-center justify-between p-3 bg-card/50 rounded-lg border border-border"
+                        className="flex items-center justify-between p-3 bg-gray-900/50 rounded-lg border border-gray-800"
                       >
                         <div>
                           <h4 className="font-medium">Pool {pool.poolId}</h4>
@@ -529,7 +529,7 @@ export default function Dashboard() {
           </Card>
 
           {/* Contract Info */}
-          <Card className="crypto-card p-3 border bg-card/50">
+          <Card className="crypto-card p-3 border bg-gray-900/50">
             <h3 className="text-xs font-semibold mb-2">Contract Addresses (Sepolia Testnet)</h3>
             <div className="space-y-1 text-[0.6rem] font-mono">
               <div className="flex justify-between">
