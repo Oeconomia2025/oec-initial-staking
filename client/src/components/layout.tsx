@@ -302,6 +302,7 @@ export function Layout({
 
   const toggleCollapsed = () => {
     isNavigatingRef.current = false;
+    lockedCollapsedStateRef.current = null;
     const next = !sidebarCollapsed;
     setSidebarCollapsed(next);
     localStorage.setItem("sidebar-collapsed", String(next));

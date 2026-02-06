@@ -316,14 +316,27 @@ export default function Pools() {
         args: [BigInt(poolId), amount],
       });
 
-      await publicClient?.waitForTransactionReceipt({ hash });
-      toast({ title: "Successfully staked!", description: `${stakeAmount[poolId]} OEC has been staked` });
+      toast({ title: "Transaction submitted", description: "Waiting for confirmation..." });
+
+      try {
+        await publicClient?.waitForTransactionReceipt({ hash });
+        toast({ title: "Successfully staked!", description: `${stakeAmount[poolId]} OEC has been staked` });
+      } catch (receiptError) {
+        // Transaction was sent but receipt failed - likely still succeeded
+        console.warn("Receipt wait failed, tx may still succeed:", receiptError);
+        toast({ title: "Transaction sent", description: "Check your wallet for confirmation status" });
+      }
 
       // Refresh data
       window.location.reload();
-    } catch (error) {
+    } catch (error: any) {
       console.error("Stake failed:", error);
-      toast({ title: "Stake failed", description: "Transaction was rejected or failed", variant: "destructive" });
+      // Only show failure if user rejected or tx wasn't sent
+      if (error?.message?.includes("User rejected") || error?.message?.includes("denied")) {
+        toast({ title: "Transaction cancelled", description: "You rejected the transaction", variant: "destructive" });
+      } else {
+        toast({ title: "Stake failed", description: "Transaction was rejected or failed", variant: "destructive" });
+      }
     } finally {
       setTxPending(false);
     }
@@ -344,12 +357,24 @@ export default function Pools() {
         args: [BigInt(poolId), amount],
       });
 
-      await publicClient?.waitForTransactionReceipt({ hash });
-      toast({ title: "Successfully withdrew!", description: `${stakeAmount[poolId]} OEC has been withdrawn` });
+      toast({ title: "Transaction submitted", description: "Waiting for confirmation..." });
+
+      try {
+        await publicClient?.waitForTransactionReceipt({ hash });
+        toast({ title: "Successfully withdrew!", description: `${stakeAmount[poolId]} OEC has been withdrawn` });
+      } catch (receiptError) {
+        console.warn("Receipt wait failed, tx may still succeed:", receiptError);
+        toast({ title: "Transaction sent", description: "Check your wallet for confirmation status" });
+      }
+
       window.location.reload();
-    } catch (error) {
+    } catch (error: any) {
       console.error("Withdraw failed:", error);
-      toast({ title: "Withdraw failed", description: "Transaction was rejected or failed", variant: "destructive" });
+      if (error?.message?.includes("User rejected") || error?.message?.includes("denied")) {
+        toast({ title: "Transaction cancelled", description: "You rejected the transaction", variant: "destructive" });
+      } else {
+        toast({ title: "Withdraw failed", description: "Transaction was rejected or failed", variant: "destructive" });
+      }
     } finally {
       setTxPending(false);
     }
@@ -386,18 +411,30 @@ export default function Pools() {
         args: [BigInt(earlyWithdrawModal.poolId!), pool.userBalance],
       });
 
-      await publicClient?.waitForTransactionReceipt({ hash });
+      toast({ title: "Transaction submitted", description: "Waiting for confirmation..." });
 
       const penaltyAmount = (pool.userBalance * earlyWithdrawModal.penaltyBps) / 10000n;
       const receivedAmount = pool.userBalance - penaltyAmount;
-      toast({
-        title: "Early withdrawal complete!",
-        description: `Received ${formatNumber(receivedAmount)} OEC (${formatNumber(penaltyAmount)} penalty)`
-      });
+
+      try {
+        await publicClient?.waitForTransactionReceipt({ hash });
+        toast({
+          title: "Early withdrawal complete!",
+          description: `Received ${formatNumber(receivedAmount)} OEC (${formatNumber(penaltyAmount)} penalty)`
+        });
+      } catch (receiptError) {
+        console.warn("Receipt wait failed, tx may still succeed:", receiptError);
+        toast({ title: "Transaction sent", description: "Check your wallet for confirmation status" });
+      }
+
       window.location.reload();
-    } catch (error) {
+    } catch (error: any) {
       console.error("Early withdraw failed:", error);
-      toast({ title: "Early withdraw failed", description: "Transaction was rejected or failed", variant: "destructive" });
+      if (error?.message?.includes("User rejected") || error?.message?.includes("denied")) {
+        toast({ title: "Transaction cancelled", description: "You rejected the transaction", variant: "destructive" });
+      } else {
+        toast({ title: "Early withdraw failed", description: "Transaction was rejected or failed", variant: "destructive" });
+      }
     } finally {
       setTxPending(false);
     }
@@ -419,15 +456,27 @@ export default function Pools() {
         args: [BigInt(poolId)],
       });
 
-      await publicClient?.waitForTransactionReceipt({ hash });
-      toast({
-        title: "Rewards claimed!",
-        description: `Claimed ${pool ? formatNumber(pool.userEarned) : ''} OEC rewards`
-      });
+      toast({ title: "Transaction submitted", description: "Waiting for confirmation..." });
+
+      try {
+        await publicClient?.waitForTransactionReceipt({ hash });
+        toast({
+          title: "Rewards claimed!",
+          description: `Claimed ${pool ? formatNumber(pool.userEarned) : ''} OEC rewards`
+        });
+      } catch (receiptError) {
+        console.warn("Receipt wait failed, tx may still succeed:", receiptError);
+        toast({ title: "Transaction sent", description: "Check your wallet for confirmation status" });
+      }
+
       window.location.reload();
-    } catch (error) {
+    } catch (error: any) {
       console.error("Claim failed:", error);
-      toast({ title: "Claim failed", description: "Transaction was rejected or failed", variant: "destructive" });
+      if (error?.message?.includes("User rejected") || error?.message?.includes("denied")) {
+        toast({ title: "Transaction cancelled", description: "You rejected the transaction", variant: "destructive" });
+      } else {
+        toast({ title: "Claim failed", description: "Transaction was rejected or failed", variant: "destructive" });
+      }
     } finally {
       setTxPending(false);
     }
