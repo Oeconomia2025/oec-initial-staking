@@ -24,8 +24,8 @@ import OECFaucetABI from "@/services/abis/OECFaucet.json";
 // Contract addresses on Sepolia
 const OEC_TOKEN = "0x2b2fb8df4ac5d394f0d5674d7a54802e42a06aba";
 
-// Faucet contract address - UPDATE THIS AFTER DEPLOYMENT
-const FAUCET_CONTRACT = "0x0000000000000000000000000000000000000000";
+// Faucet contract address on Sepolia
+const FAUCET_CONTRACT = "0x2e490a627c67b9e70cace4905348395559ef3411";
 
 export default function Faucet() {
   const { isConnected, address, chain } = useAccount();
