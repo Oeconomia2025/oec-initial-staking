@@ -24,6 +24,7 @@ import OECFaucetABI from "@/services/abis/OECFaucet.json";
 
 // Contract addresses on Sepolia
 const OEC_TOKEN = "0x2b2fb8df4ac5d394f0d5674d7a54802e42a06aba";
+const STAKING_CONTRACT = "0x4a4da37c9a9f421efe3feb527fc16802ce756ec3";
 
 // Faucet contract address on Sepolia
 const FAUCET_CONTRACT = "0x2e490a627c67b9e70cace4905348395559ef3411";
@@ -42,6 +43,7 @@ export default function Faucet() {
   const [txPending, setTxPending] = useState(false);
   const [userBalance, setUserBalance] = useState<bigint>(0n);
   const [faucetBalance, setFaucetBalance] = useState<bigint>(0n);
+  const [stakingRewardsBalance, setStakingRewardsBalance] = useState<bigint>(0n);
   const [claimAmount, setClaimAmount] = useState<bigint>(0n);
   const [canClaimTokens, setCanClaimTokens] = useState(true);
   const [timeRemaining, setTimeRemaining] = useState<bigint>(0n);
@@ -96,6 +98,15 @@ export default function Faucet() {
             setTimeRemaining(remaining);
           }
         }
+
+        // Fetch staking contract rewards balance
+        const stakingBal = await publicClient.readContract({
+          address: OEC_TOKEN,
+          abi: ERC20ABI,
+          functionName: "balanceOf",
+          args: [STAKING_CONTRACT],
+        }) as bigint;
+        setStakingRewardsBalance(stakingBal);
       } catch (error) {
         console.error("Error fetching data:", error);
       } finally {
@@ -412,6 +423,10 @@ export default function Faucet() {
                 <Card className="crypto-card p-4 bg-gradient-to-r from-green-500/10 to-teal-500/10 border-green-500/30">
                   <p className="text-xs text-gray-400 mb-1">Faucet Balance</p>
                   <p className="text-xl font-bold">{isFaucetDeployed ? formatNumber(faucetBalance) : "—"}</p>
+                </Card>
+                <Card className="crypto-card p-4 bg-gradient-to-r from-orange-500/10 to-yellow-500/10 border-orange-500/30">
+                  <p className="text-xs text-gray-400 mb-1">Staking Rewards Balance</p>
+                  <p className="text-xl font-bold">{formatNumber(stakingRewardsBalance)}</p>
                 </Card>
               </>
             )}
