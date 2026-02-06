@@ -149,19 +149,10 @@ export default function Faucet() {
 
   return (
     <Layout>
-      <div className="container mx-auto px-4 py-6 space-y-4 max-w-2xl">
-        {/* Header */}
-        <div className="text-center mb-6">
-          <div className="w-16 h-16 mx-auto mb-4 rounded-full bg-gradient-to-r from-cyan-500 to-blue-600 flex items-center justify-center">
-            <Droplets className="w-8 h-8 text-white" />
-          </div>
-          <h1 className="text-2xl font-bold mb-2">OEC Testnet Faucet</h1>
-          <p className="text-gray-400">Get test OEC tokens on Sepolia</p>
-        </div>
-
-        {/* Wallet Connection Notice */}
+      <div className="container mx-auto px-4 py-6">
+        {/* Wallet Connection Notice - Full Width */}
         {!isConnected && (
-          <Card className="crypto-card p-4 border bg-gradient-to-r from-yellow-500/10 to-orange-500/10 border-yellow-500/30">
+          <Card className="crypto-card p-4 border bg-gradient-to-r from-yellow-500/10 to-orange-500/10 border-yellow-500/30 mb-4">
             <div className="flex items-center justify-between">
               <div className="flex items-center space-x-3">
                 <Wallet className="w-5 h-5 text-yellow-400" />
@@ -175,9 +166,9 @@ export default function Faucet() {
           </Card>
         )}
 
-        {/* Wrong Network Warning */}
+        {/* Wrong Network Warning - Full Width */}
         {isConnected && !isCorrectNetwork && (
-          <Card className="crypto-card p-4 border bg-gradient-to-r from-red-500/10 to-orange-500/10 border-red-500/30">
+          <Card className="crypto-card p-4 border bg-gradient-to-r from-red-500/10 to-orange-500/10 border-red-500/30 mb-4">
             <div className="flex items-center justify-between">
               <div className="flex items-center space-x-3">
                 <AlertTriangle className="w-5 h-5 text-red-400" />
@@ -197,154 +188,166 @@ export default function Faucet() {
           </Card>
         )}
 
-        {/* Balances */}
-        {isConnected && isCorrectNetwork && (
-          <div className="grid grid-cols-2 gap-4">
-            <Card className="crypto-card p-4 bg-gradient-to-r from-blue-500/10 to-purple-500/10 border-blue-500/30">
-              <p className="text-xs text-gray-400 mb-1">Your OEC Balance</p>
-              <p className="text-xl font-bold">{formatNumber(userBalance)}</p>
-            </Card>
-            <Card className="crypto-card p-4 bg-gradient-to-r from-green-500/10 to-teal-500/10 border-green-500/30">
-              <p className="text-xs text-gray-400 mb-1">Faucet Balance</p>
-              <p className="text-xl font-bold">{formatNumber(faucetBalance)}</p>
-            </Card>
-          </div>
-        )}
-
-        {/* Request Form */}
-        {isConnected && isCorrectNetwork && (
-          <Card className="crypto-card p-6 bg-gray-900/80">
-            {requestSubmitted ? (
-              <div className="text-center space-y-4">
-                <div className="w-16 h-16 mx-auto rounded-full bg-green-500/20 flex items-center justify-center">
-                  <Check className="w-8 h-8 text-green-400" />
-                </div>
-                <h3 className="text-lg font-semibold text-green-400">Request Submitted!</h3>
-                <p className="text-sm text-gray-400">
-                  Your request has been logged. Test tokens will be sent to your address manually.
-                  This typically happens within a few hours.
-                </p>
-                <div className="bg-black/30 rounded-lg p-3">
-                  <p className="text-xs text-gray-400 mb-1">Your Address:</p>
-                  <p className="font-mono text-sm break-all">{address}</p>
-                </div>
-              </div>
-            ) : (
-              <div className="space-y-4">
-                <div className="text-center">
-                  <h3 className="text-lg font-semibold mb-2">Request Test Tokens</h3>
-                  <p className="text-sm text-gray-400">
-                    Request 1,000 OEC test tokens for testing the staking dApp.
-                  </p>
-                </div>
-
-                {!canRequest() && (
-                  <div className="bg-yellow-500/10 border border-yellow-500/30 rounded-lg p-3 flex items-center space-x-3">
-                    <Clock className="w-5 h-5 text-yellow-400" />
-                    <div>
-                      <p className="text-sm text-yellow-400">Rate limited</p>
-                      <p className="text-xs text-gray-400">
-                        Next request available in: {getTimeUntilNextRequest()}
-                      </p>
+        {/* Two Column Layout */}
+        <div className="grid grid-cols-1 lg:grid-cols-[3fr_2fr] gap-6">
+          {/* Left Column - Request Form */}
+          <div className="space-y-4">
+            {/* Request Form */}
+            {isConnected && isCorrectNetwork && (
+              <Card className="crypto-card p-6 bg-gray-900/80">
+                {requestSubmitted ? (
+                  <div className="text-center space-y-4">
+                    <div className="w-16 h-16 mx-auto rounded-full bg-green-500/20 flex items-center justify-center">
+                      <Check className="w-8 h-8 text-green-400" />
+                    </div>
+                    <h3 className="text-lg font-semibold text-green-400">Request Submitted!</h3>
+                    <p className="text-sm text-gray-400">
+                      Your request has been logged. Test tokens will be sent to your address manually.
+                      This typically happens within a few hours.
+                    </p>
+                    <div className="bg-black/30 rounded-lg p-3">
+                      <p className="text-xs text-gray-400 mb-1">Your Address:</p>
+                      <p className="font-mono text-sm break-all">{address}</p>
                     </div>
                   </div>
-                )}
+                ) : (
+                  <div className="space-y-4">
+                    <div className="flex items-center justify-between">
+                      <div>
+                        <h3 className="text-lg font-semibold mb-1">Request Test Tokens</h3>
+                        <p className="text-sm text-gray-400">
+                          Request 1,000 OEC test tokens for testing the staking dApp.
+                        </p>
+                      </div>
+                      <div className="w-12 h-12 rounded-full bg-gradient-to-r from-cyan-500 to-blue-600 flex items-center justify-center flex-shrink-0 ml-4">
+                        <Droplets className="w-6 h-6 text-white" />
+                      </div>
+                    </div>
 
-                <div className="bg-black/30 rounded-lg p-3">
-                  <p className="text-xs text-gray-400 mb-1">Your Address:</p>
-                  <div className="flex items-center justify-between">
-                    <p className="font-mono text-sm break-all flex-1">{address}</p>
-                    <button
-                      onClick={() => copyToClipboard(address || "")}
-                      className="ml-2 p-1 hover:bg-gray-700 rounded"
-                      title="Copy address"
+                    {!canRequest() && (
+                      <div className="bg-yellow-500/10 border border-yellow-500/30 rounded-lg p-3 flex items-center space-x-3">
+                        <Clock className="w-5 h-5 text-yellow-400" />
+                        <div>
+                          <p className="text-sm text-yellow-400">Rate limited</p>
+                          <p className="text-xs text-gray-400">
+                            Next request available in: {getTimeUntilNextRequest()}
+                          </p>
+                        </div>
+                      </div>
+                    )}
+
+                    <div className="bg-black/30 rounded-lg p-3">
+                      <p className="text-xs text-gray-400 mb-1">Your Address:</p>
+                      <div className="flex items-center justify-between">
+                        <p className="font-mono text-sm break-all flex-1">{address}</p>
+                        <button
+                          onClick={() => copyToClipboard(address || "")}
+                          className="ml-2 p-1 hover:bg-gray-700 rounded"
+                          title="Copy address"
+                        >
+                          {copied ? <Check className="w-4 h-4 text-green-400" /> : <Copy className="w-4 h-4" />}
+                        </button>
+                      </div>
+                    </div>
+
+                    <Button
+                      onClick={handleRequestTokens}
+                      disabled={!canRequest()}
+                      className="w-full bg-gradient-to-r from-cyan-500 to-blue-600 hover:from-cyan-600 hover:to-blue-700"
                     >
-                      {copied ? <Check className="w-4 h-4 text-green-400" /> : <Copy className="w-4 h-4" />}
-                    </button>
+                      <Droplets className="w-4 h-4 mr-2" />
+                      Request Test Tokens
+                    </Button>
                   </div>
-                </div>
-
-                <Button
-                  onClick={handleRequestTokens}
-                  disabled={!canRequest()}
-                  className="w-full bg-gradient-to-r from-cyan-500 to-blue-600 hover:from-cyan-600 hover:to-blue-700"
-                >
-                  <Droplets className="w-4 h-4 mr-2" />
-                  Request Test Tokens
-                </Button>
-              </div>
+                )}
+              </Card>
             )}
-          </Card>
-        )}
 
-        {/* Info Cards */}
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          <Card className="crypto-card p-4 bg-gray-900/50">
-            <h3 className="text-sm font-semibold mb-2">How it works</h3>
-            <ul className="text-xs text-gray-400 space-y-1">
-              <li>1. Connect your wallet</li>
-              <li>2. Switch to Sepolia testnet</li>
-              <li>3. Click "Request Test Tokens"</li>
-              <li>4. Tokens are sent manually</li>
-            </ul>
-          </Card>
+            {/* Need Sepolia ETH */}
+            <Card className="crypto-card p-4 bg-gray-900/50">
+              <h3 className="text-sm font-semibold mb-2">Need Sepolia ETH?</h3>
+              <p className="text-xs text-gray-400 mb-2">
+                You'll need Sepolia ETH for gas fees.
+              </p>
+              <a
+                href="https://sepoliafaucet.com/"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="text-xs text-cyan-400 hover:underline flex items-center"
+              >
+                Get Sepolia ETH <ExternalLink className="w-3 h-3 ml-1" />
+              </a>
+            </Card>
 
-          <Card className="crypto-card p-4 bg-gray-900/50">
-            <h3 className="text-sm font-semibold mb-2">Need Sepolia ETH?</h3>
-            <p className="text-xs text-gray-400 mb-2">
-              You'll need Sepolia ETH for gas fees.
-            </p>
-            <a
-              href="https://sepoliafaucet.com/"
-              target="_blank"
-              rel="noopener noreferrer"
-              className="text-xs text-cyan-400 hover:underline flex items-center"
-            >
-              Get Sepolia ETH <ExternalLink className="w-3 h-3 ml-1" />
-            </a>
-          </Card>
+            {/* Token Contract */}
+            <Card className="crypto-card p-4 bg-gray-900/50">
+              <h3 className="text-xs font-semibold mb-2">OEC Token Contract (Sepolia)</h3>
+              <div className="flex items-center justify-between">
+                <a
+                  href={`https://sepolia.etherscan.io/address/${OEC_TOKEN}`}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="font-mono text-xs text-blue-400 hover:underline break-all"
+                >
+                  {OEC_TOKEN}
+                </a>
+                <a
+                  href={`https://sepolia.etherscan.io/address/${OEC_TOKEN}`}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="ml-2 text-gray-400 hover:text-white"
+                >
+                  <ExternalLink className="w-3 h-3" />
+                </a>
+              </div>
+            </Card>
+          </div>
+
+          {/* Right Column - Stacked Info Cards */}
+          <div className="space-y-4">
+            {/* Balances */}
+            {isConnected && isCorrectNetwork && (
+              <>
+                <Card className="crypto-card p-4 bg-gradient-to-r from-blue-500/10 to-purple-500/10 border-blue-500/30">
+                  <p className="text-xs text-gray-400 mb-1">Your OEC Balance</p>
+                  <p className="text-xl font-bold">{formatNumber(userBalance)}</p>
+                </Card>
+                <Card className="crypto-card p-4 bg-gradient-to-r from-green-500/10 to-teal-500/10 border-green-500/30">
+                  <p className="text-xs text-gray-400 mb-1">Faucet Balance</p>
+                  <p className="text-xl font-bold">{formatNumber(faucetBalance)}</p>
+                </Card>
+              </>
+            )}
+
+            <Card className="crypto-card p-4 bg-gray-900/50">
+              <h3 className="text-sm font-semibold mb-2">How it works</h3>
+              <ul className="text-xs text-gray-400 space-y-1">
+                <li>1. Connect your wallet</li>
+                <li>2. Switch to Sepolia testnet</li>
+                <li>3. Click "Request Test Tokens"</li>
+                <li>4. Tokens are sent manually</li>
+              </ul>
+            </Card>
+
+            {/* Faucet Wallet Info */}
+            <Card className="crypto-card p-4 bg-gray-900/50">
+              <h3 className="text-xs font-semibold mb-2">Faucet Wallet</h3>
+              <p className="text-xs text-gray-400 mb-2">
+                Donations to refill the faucet are welcome!
+              </p>
+              <div className="flex items-center justify-between bg-black/30 rounded p-2">
+                <p className="font-mono text-xs break-all">{FAUCET_WALLET}</p>
+                <button
+                  onClick={() => copyToClipboard(FAUCET_WALLET)}
+                  className="ml-2 p-1 hover:bg-gray-700 rounded flex-shrink-0"
+                  title="Copy address"
+                >
+                  <Copy className="w-3 h-3" />
+                </button>
+              </div>
+            </Card>
+          </div>
         </div>
-
-        {/* Faucet Wallet Info */}
-        <Card className="crypto-card p-4 bg-gray-900/50">
-          <h3 className="text-xs font-semibold mb-2">Faucet Wallet</h3>
-          <p className="text-xs text-gray-400 mb-2">
-            Donations to refill the faucet are welcome!
-          </p>
-          <div className="flex items-center justify-between bg-black/30 rounded p-2">
-            <p className="font-mono text-xs break-all">{FAUCET_WALLET}</p>
-            <button
-              onClick={() => copyToClipboard(FAUCET_WALLET)}
-              className="ml-2 p-1 hover:bg-gray-700 rounded flex-shrink-0"
-              title="Copy address"
-            >
-              <Copy className="w-3 h-3" />
-            </button>
-          </div>
-        </Card>
-
-        {/* Token Contract */}
-        <Card className="crypto-card p-4 bg-gray-900/50">
-          <h3 className="text-xs font-semibold mb-2">OEC Token Contract (Sepolia)</h3>
-          <div className="flex items-center justify-between">
-            <a
-              href={`https://sepolia.etherscan.io/address/${OEC_TOKEN}`}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="font-mono text-xs text-blue-400 hover:underline break-all"
-            >
-              {OEC_TOKEN}
-            </a>
-            <a
-              href={`https://sepolia.etherscan.io/address/${OEC_TOKEN}`}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="ml-2 text-gray-400 hover:text-white"
-            >
-              <ExternalLink className="w-3 h-3" />
-            </a>
-          </div>
-        </Card>
       </div>
     </Layout>
   );
