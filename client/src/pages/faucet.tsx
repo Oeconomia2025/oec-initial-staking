@@ -11,6 +11,7 @@ import {
   AlertTriangle,
   ExternalLink,
   Loader2,
+  Plus,
 } from "lucide-react";
 import { WalletConnect } from "@/components/wallet-connect";
 import { OECLoader } from "@/components/oec-loader";
@@ -186,6 +187,37 @@ export default function Faucet() {
     toast({ title: "Copied to clipboard!" });
   };
 
+  const addOECToWallet = async () => {
+    try {
+      if (!walletClient) {
+        toast({ title: "Connect wallet first", variant: "destructive" });
+        return;
+      }
+
+      await walletClient.request({
+        method: 'wallet_watchAsset',
+        params: {
+          type: 'ERC20',
+          options: {
+            address: OEC_TOKEN,
+            symbol: 'OEC',
+            decimals: 18,
+            image: 'https://pub-37d61a7eb7ae45898b46702664710cb2.r2.dev/images/OEC%20Logo%20Square.png',
+          },
+        },
+      });
+
+      toast({ title: "OEC token added to wallet!" });
+    } catch (error: any) {
+      console.error("Failed to add token:", error);
+      if (error?.message?.includes("User rejected")) {
+        toast({ title: "Request cancelled", variant: "destructive" });
+      } else {
+        toast({ title: "Failed to add token", variant: "destructive" });
+      }
+    }
+  };
+
   if (loading) {
     return (
       <Layout>
@@ -298,18 +330,32 @@ export default function Faucet() {
                     </div>
                   </div>
 
-                  <Button
-                    onClick={handleClaimTokens}
-                    disabled={!canClaimTokens || txPending || !isFaucetDeployed}
-                    className="w-full bg-gradient-to-r from-cyan-500 to-blue-600 hover:from-cyan-600 hover:to-blue-700"
-                  >
-                    {txPending ? (
-                      <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                    ) : (
-                      <Droplets className="w-4 h-4 mr-2" />
-                    )}
-                    {txPending ? "Claiming..." : "Claim Test Tokens"}
-                  </Button>
+                  <div className="flex gap-3">
+                    <Button
+                      onClick={handleClaimTokens}
+                      disabled={!canClaimTokens || txPending || !isFaucetDeployed}
+                      className="flex-1 bg-gradient-to-r from-cyan-500 to-blue-600 hover:from-cyan-600 hover:to-blue-700"
+                    >
+                      {txPending ? (
+                        <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                      ) : (
+                        <Droplets className="w-4 h-4 mr-2" />
+                      )}
+                      {txPending ? "Claiming..." : "Claim Test Tokens"}
+                    </Button>
+                    <button
+                      onClick={addOECToWallet}
+                      className="flex items-center justify-center px-4 py-2 rounded-lg text-white text-sm font-medium hover:bg-white/5 transition-all duration-200"
+                      style={{
+                        background: 'linear-gradient(#000000, #000000) padding-box, linear-gradient(45deg, #a855f7, #3b82f6, #06b6d4) border-box',
+                        border: '2px solid transparent'
+                      }}
+                      title="Add OEC token to your wallet"
+                    >
+                      <Plus className="w-4 h-4 mr-2" />
+                      Add OEC to Wallet
+                    </button>
+                  </div>
                 </div>
               </Card>
             )}
