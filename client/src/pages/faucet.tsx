@@ -223,7 +223,9 @@ export default function Faucet() {
                   <p className="text-xs text-gray-400">to request test tokens</p>
                 </div>
               </div>
-              <WalletConnect />
+              <div className="max-w-xs">
+                <WalletConnect />
+              </div>
             </div>
           </Card>
         )}
