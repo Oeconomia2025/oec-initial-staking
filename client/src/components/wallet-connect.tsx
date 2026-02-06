@@ -83,7 +83,7 @@ export function WalletConnect({ collapsed = false }: WalletConnectProps) {
 
   if (isConnected && address) {
     return (
-      <Button
+      <button
         onClick={() => {
           // Clear localStorage wallet data
           if (typeof window !== 'undefined') {
@@ -105,31 +105,31 @@ export function WalletConnect({ collapsed = false }: WalletConnectProps) {
             description: "Your wallet has been disconnected successfully",
           })
         }}
-        className={`w-full text-white hover:text-white shadow-lg transition-all duration-200 font-medium border-0 flex items-center rounded-lg py-2 ${
+        className={`w-full flex items-center ${
           collapsed ? "justify-center px-2" : "space-x-3 px-3"
-        }`}
+        } py-2 rounded-lg text-white font-medium shadow-lg transition-all duration-200 hover:opacity-90`}
         style={{ background: 'linear-gradient(45deg, #00d4ff, #ff00ff)' }}
         title={collapsed ? formatAddress(address) : undefined}
       >
         <Wallet className="w-5 h-5 flex-shrink-0" />
         {!collapsed && <span>{formatAddress(address)}</span>}
-      </Button>
+      </button>
     )
   }
 
   return (
     <Dialog open={isOpen} onOpenChange={setIsOpen}>
       <DialogTrigger asChild>
-        <Button
-          className={`w-full text-white hover:text-white shadow-lg transition-all duration-200 font-medium border-0 flex items-center rounded-lg py-2 ${
+        <button
+          className={`w-full flex items-center ${
             collapsed ? "justify-center px-2" : "space-x-3 px-3"
-          }`}
+          } py-2 rounded-lg text-white font-medium shadow-lg transition-all duration-200 hover:opacity-90`}
           style={{ background: 'linear-gradient(45deg, #00d4ff, #ff00ff)' }}
           title={collapsed ? "Connect Wallet" : undefined}
         >
           <Wallet className="w-5 h-5 flex-shrink-0" />
           {!collapsed && <span>Connect Wallet</span>}
-        </Button>
+        </button>
       </DialogTrigger>
       <DialogContent className="bg-gradient-to-br from-[var(--crypto-card)] to-[var(--crypto-dark)] border-crypto-blue/20 shadow-xl max-w-sm max-h-[90vh] overflow-y-auto">
         <DialogHeader>
