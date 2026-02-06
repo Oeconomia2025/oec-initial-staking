@@ -9,6 +9,7 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { Card } from "@/components/ui/card";
 import { WalletConnect } from "@/components/wallet-connect";
+import { useTheme } from "@/components/theme-provider";
 import { usePublicClient, useAccount } from "wagmi";
 import { formatEther } from "viem";
 import ERC20ABI from "@/services/abis/ERC20.json";
@@ -33,6 +34,8 @@ import {
   Heart,
   Shield,
   Droplets,
+  Sun,
+  Moon,
 } from "lucide-react";
 import { SiX, SiMedium, SiYoutube, SiDiscord, SiGithub, SiTelegram } from "react-icons/si";
 
@@ -115,6 +118,7 @@ export function Layout({
 
   const publicClient = usePublicClient();
   const { address } = useAccount();
+  const { theme, toggleTheme } = useTheme();
   const [isOwner, setIsOwner] = useState(false);
   const lastCheckedAddressRef = useRef<string | null>(null);
   const ownerCheckInitialized = useRef(false);
@@ -439,6 +443,27 @@ export function Layout({
                 ))}
               </DropdownMenuContent>
             </DropdownMenu>
+
+            {/* Theme Toggle */}
+            <button
+              onClick={toggleTheme}
+              className={`w-full flex items-center ${
+                sidebarCollapsed ? "justify-center px-2" : "space-x-3 px-3"
+              } py-2 rounded-lg text-left transition-colors group relative text-muted-foreground hover:text-foreground hover:bg-muted`}
+              title={sidebarCollapsed ? (theme === 'dark' ? "Light Mode" : "Dark Mode") : undefined}
+            >
+              {theme === 'dark' ? (
+                <Sun className="w-5 h-5 flex-shrink-0" />
+              ) : (
+                <Moon className="w-5 h-5 flex-shrink-0" />
+              )}
+              {!sidebarCollapsed && <span>{theme === 'dark' ? "Light Mode" : "Dark Mode"}</span>}
+              {sidebarCollapsed && (
+                <div className="absolute left-full ml-2 px-2 py-1 bg-[var(--crypto-dark)] text-white text-sm rounded opacity-0 group-hover:opacity-100 transition-opacity duration-200 pointer-events-none whitespace-nowrap z-50">
+                  {theme === 'dark' ? "Light Mode" : "Dark Mode"}
+                </div>
+              )}
+            </button>
 
             {/* Oeconomia Button */}
             <button
