@@ -338,12 +338,12 @@ export function Layout({
         <aside
           className={`fixed inset-y-0 left-0 z-50 ${
             sidebarCollapsed ? "w-16" : "w-48"
-          } bg-gray-950 border-r border-gray-700 transform ${
+          } bg-background border-r border-border transform ${
             sidebarOpen ? "translate-x-0" : "-translate-x-full"
           } transition-all duration-300 ease-in-out lg:translate-x-0 lg:static lg:inset-0 flex flex-col shadow-xl shadow-black/70`}
         >
           {/* Sidebar header */}
-          <div className="sticky top-0 z-10 bg-gray-950 flex items-center justify-between h-20 px-4 border-b-0">
+          <div className="sticky top-0 z-10 bg-background flex items-center justify-between h-20 px-4 border-b-0">
             <div className={`flex items-center ${sidebarCollapsed ? "justify-center w-full" : "space-x-3"}`}>
               <div className="w-8 h-8 rounded-full overflow-hidden flex-shrink-0">
                 <img src="/oec-logo.png" alt="Oeconomia Logo" className="w-full h-full object-cover" />
@@ -360,7 +360,7 @@ export function Layout({
           </div>
 
           {/* Sidebar nav */}
-          <div className="sticky top-20 bg-gray-950 z-10 border-b-0">
+          <div className="sticky top-20 bg-background z-10 border-b-0">
             <nav className="p-2">
               <ul className="space-y-2">
                 {sidebarItems.map((item, i) => (
@@ -395,7 +395,7 @@ export function Layout({
           <div className="flex-1 overflow-y-auto p-4" />
 
           {/* Bottom section */}
-          <div className="sticky bottom-0 bg-gray-950 p-2 border-t-0 flex flex-col space-y-2">
+          <div className="sticky bottom-0 bg-background p-2 border-t-0 flex flex-col space-y-2">
             {/* Links Button */}
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
@@ -444,6 +444,32 @@ export function Layout({
               </DropdownMenuContent>
             </DropdownMenu>
 
+            {/* Oeconomia Button */}
+            <button
+              onClick={() => window.open('https://oeconomia.io/', '_blank')}
+              className={`w-full flex items-center ${
+                sidebarCollapsed ? "justify-center px-2" : "space-x-3 px-3"
+              } py-2 rounded-lg text-left transition-colors group relative text-white hover:bg-white/5 transition-all duration-200`}
+              style={{
+                background: 'linear-gradient(var(--background), var(--background)) padding-box, linear-gradient(45deg, #a855f7, #3b82f6, #06b6d4) border-box',
+                border: '2px solid transparent'
+              }}
+              title={sidebarCollapsed ? "Oeconomia" : undefined}
+            >
+              <img
+                src="https://pub-37d61a7eb7ae45898b46702664710cb2.r2.dev/images/OEC%20Logo%20Square.png"
+                alt="OEC Logo"
+                className="w-5 h-5 flex-shrink-0"
+              />
+              {!sidebarCollapsed && <span className="text-foreground">{`Oeconomia`}</span>}
+              {sidebarCollapsed && (
+                <div className="absolute left-full ml-2 px-2 py-1 bg-popover text-popover-foreground text-sm rounded opacity-0 group-hover:opacity-100 transition-opacity duration-200 pointer-events-none whitespace-nowrap z-50">
+                  Oeconomia
+                </div>
+              )}
+            </button>
+            <WalletConnect collapsed={sidebarCollapsed} />
+
             {/* Theme Toggle */}
             <button
               onClick={toggleTheme}
@@ -459,37 +485,11 @@ export function Layout({
               )}
               {!sidebarCollapsed && <span>{theme === 'dark' ? "Light Mode" : "Dark Mode"}</span>}
               {sidebarCollapsed && (
-                <div className="absolute left-full ml-2 px-2 py-1 bg-[var(--crypto-dark)] text-white text-sm rounded opacity-0 group-hover:opacity-100 transition-opacity duration-200 pointer-events-none whitespace-nowrap z-50">
+                <div className="absolute left-full ml-2 px-2 py-1 bg-popover text-popover-foreground text-sm rounded opacity-0 group-hover:opacity-100 transition-opacity duration-200 pointer-events-none whitespace-nowrap z-50">
                   {theme === 'dark' ? "Light Mode" : "Dark Mode"}
                 </div>
               )}
             </button>
-
-            {/* Oeconomia Button */}
-            <button
-              onClick={() => window.open('https://oeconomia.io/', '_blank')}
-              className={`w-full flex items-center ${
-                sidebarCollapsed ? "justify-center px-2" : "space-x-3 px-3"
-              } py-2 rounded-lg text-left transition-colors group relative text-white hover:bg-white/5 transition-all duration-200`}
-              style={{
-                background: 'linear-gradient(#000000, #000000) padding-box, linear-gradient(45deg, #a855f7, #3b82f6, #06b6d4) border-box',
-                border: '2px solid transparent'
-              }}
-              title={sidebarCollapsed ? "Oeconomia" : undefined}
-            >
-              <img
-                src="https://pub-37d61a7eb7ae45898b46702664710cb2.r2.dev/images/OEC%20Logo%20Square.png"
-                alt="OEC Logo"
-                className="w-5 h-5 flex-shrink-0"
-              />
-              {!sidebarCollapsed && <span>Oeconomia</span>}
-              {sidebarCollapsed && (
-                <div className="absolute left-full ml-2 px-2 py-1 bg-[var(--crypto-dark)] text-white text-sm rounded opacity-0 group-hover:opacity-100 transition-opacity duration-200 pointer-events-none whitespace-nowrap z-50">
-                  Oeconomia
-                </div>
-              )}
-            </button>
-            <WalletConnect collapsed={sidebarCollapsed} />
           </div>
         </aside>
 
@@ -501,7 +501,7 @@ export function Layout({
         {/* === MAIN COLUMN: header + page content (stacked) === */}
         <div className="flex-1 lg:ml-0 relative flex flex-col">
           {/* Header */}
-          <header className="sticky top-0 z-30 bg-gray-950 border-b-0 px-6 h-20 flex items-center shadow-xl shadow-black/70">
+          <header className="sticky top-0 z-30 bg-background border-b-0 px-6 h-20 flex items-center shadow-xl shadow-black/70">
             <div className="flex items-center justify-between w-full">
               {/* Left side: burger + title */}
               <div className="flex items-center space-x-4">

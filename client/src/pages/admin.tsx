@@ -411,7 +411,7 @@ export default function Admin() {
         </div>
 
         {/* Contract Info */}
-        <Card className="crypto-card p-4 bg-gray-900/80">
+        <Card className="crypto-card p-4 bg-card/80">
           <h3 className="text-sm font-semibold mb-3 flex items-center">
             <Settings className="w-4 h-4 mr-2" />
             Contract Information
@@ -437,7 +437,7 @@ export default function Admin() {
         </Card>
 
         {/* Existing Pools */}
-        <Card className="crypto-card p-4 bg-gray-900/80">
+        <Card className="crypto-card p-4 bg-card/80">
           <h3 className="text-sm font-semibold mb-3">Existing Pools</h3>
           <div className="space-y-2">
             {pools.map((pool) => (
@@ -467,7 +467,7 @@ export default function Admin() {
 
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
           {/* Add Pool */}
-          <Card className="crypto-card p-4 bg-gray-900/80">
+          <Card className="crypto-card p-4 bg-card/80">
             <h3 className="text-sm font-semibold mb-3 flex items-center">
               <Plus className="w-4 h-4 mr-2" />
               Add New Pool
@@ -505,7 +505,7 @@ export default function Admin() {
           </Card>
 
           {/* Update APR */}
-          <Card className="crypto-card p-4 bg-gray-900/80">
+          <Card className="crypto-card p-4 bg-card/80">
             <h3 className="text-sm font-semibold mb-3 flex items-center">
               <RefreshCw className="w-4 h-4 mr-2" />
               Update Pool APR
@@ -543,7 +543,7 @@ export default function Admin() {
           </Card>
 
           {/* Update Lock Period */}
-          <Card className="crypto-card p-4 bg-gray-900/80">
+          <Card className="crypto-card p-4 bg-card/80">
             <h3 className="text-sm font-semibold mb-3 flex items-center">
               <RefreshCw className="w-4 h-4 mr-2" />
               Update Lock Period
@@ -581,7 +581,7 @@ export default function Admin() {
           </Card>
 
           {/* Update Early Penalty */}
-          <Card className="crypto-card p-4 bg-gray-900/80">
+          <Card className="crypto-card p-4 bg-card/80">
             <h3 className="text-sm font-semibold mb-3 flex items-center">
               <RefreshCw className="w-4 h-4 mr-2" />
               Update Early Penalty
@@ -619,7 +619,7 @@ export default function Admin() {
           </Card>
 
           {/* Set Penalty Recipient */}
-          <Card className="crypto-card p-4 bg-gray-900/80">
+          <Card className="crypto-card p-4 bg-card/80">
             <h3 className="text-sm font-semibold mb-3 flex items-center">
               <Wallet className="w-4 h-4 mr-2" />
               Set Penalty Recipient
@@ -647,7 +647,7 @@ export default function Admin() {
           </Card>
 
           {/* Pause/Unpause */}
-          <Card className="crypto-card p-4 bg-gray-900/80">
+          <Card className="crypto-card p-4 bg-card/80">
             <h3 className="text-sm font-semibold mb-3 flex items-center">
               {paused ? <Play className="w-4 h-4 mr-2" /> : <Pause className="w-4 h-4 mr-2" />}
               Contract Controls
@@ -670,7 +670,7 @@ export default function Admin() {
           </Card>
 
           {/* Recover Tokens */}
-          <Card className="crypto-card p-4 bg-gray-900/80">
+          <Card className="crypto-card p-4 bg-card/80">
             <h3 className="text-sm font-semibold mb-3 flex items-center">
               <AlertTriangle className="w-4 h-4 mr-2 text-yellow-400" />
               Recover Accidentally Sent Tokens

@@ -799,7 +799,7 @@ export default function Pools() {
         </div>
 
         {/* Pool Statistics */}
-        <Card className="crypto-card p-2 sm:p-3 border bg-gray-900/80">
+        <Card className="crypto-card p-2 sm:p-3 border bg-card/80">
           <h3 className="text-sm sm:text-base font-semibold mb-2 flex items-center">
             <TrendingUp className="w-3 h-3 sm:w-4 sm:h-4 mr-1 text-crypto-green" />
             Pool Statistics
@@ -827,7 +827,7 @@ export default function Pools() {
         </Card>
 
         {/* Contract Info */}
-        <Card className="crypto-card p-2 sm:p-3 border bg-gray-900/50">
+        <Card className="crypto-card p-2 sm:p-3 border bg-card/50">
           <h3 className="text-xs font-semibold mb-2">Contract Addresses (Sepolia)</h3>
           <div className="space-y-1 text-[0.6rem] font-mono">
             <div className="flex justify-between">
