@@ -9,14 +9,52 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { Card } from "@/components/ui/card";
 import { WalletConnect } from "@/components/wallet-connect";
+import { EcosystemSidebar } from "@/components/ecosystem-sidebar";
 import { usePublicClient, useAccount } from "wagmi";
-import { formatEther } from "viem";
+import { formatEther, formatUnits } from "viem";
 import ERC20ABI from "@/services/abis/ERC20.json";
 import MultiPoolStakingAPRABI from "@/services/abis/MultiPoolStakingAPR.json";
 
 // Contract addresses on Sepolia
 const OEC_TOKEN = "0x2b2fb8df4ac5d394f0d5674d7a54802e42a06aba";
 const STAKING_CONTRACT = "0x4a4da37c9a9f421efe3feb527fc16802ce756ec3";
+const ELOQURA_FACTORY = "0x1a4C7849Dd8f62AefA082360b3A8D857952B3b8e";
+const USDC_TOKEN = "0x1c7D4B196Cb0C7B01d743Fbc6116a902379C7238";
+
+// Minimal ABIs for Eloqura DEX price fetch
+const FACTORY_ABI = [
+  {
+    type: "function",
+    name: "getPair",
+    inputs: [
+      { name: "tokenA", type: "address" },
+      { name: "tokenB", type: "address" },
+    ],
+    outputs: [{ name: "pair", type: "address" }],
+    stateMutability: "view",
+  },
+] as const;
+
+const PAIR_ABI = [
+  {
+    type: "function",
+    name: "getReserves",
+    inputs: [],
+    outputs: [
+      { name: "reserve0", type: "uint112" },
+      { name: "reserve1", type: "uint112" },
+      { name: "blockTimestampLast", type: "uint32" },
+    ],
+    stateMutability: "view",
+  },
+  {
+    type: "function",
+    name: "token0",
+    inputs: [],
+    outputs: [{ name: "", type: "address" }],
+    stateMutability: "view",
+  },
+] as const;
 
 // Icons (trimmed to only those used here)
 import {
@@ -110,8 +148,8 @@ export function Layout({
     tvl: 0n,
   });
 
-  // Token price (will be 0 until mainnet launch)
-  const tokenPrice = 0;
+  // Token price from Eloqura DEX OEC/USDC pool
+  const [tokenPrice, setTokenPrice] = useState(0);
 
   const publicClient = usePublicClient();
   const { address } = useAccount();
@@ -197,6 +235,44 @@ export function Layout({
 
     fetchTokenStats();
     const interval = setInterval(fetchTokenStats, 60000); // Refresh every minute
+    return () => clearInterval(interval);
+  }, [publicClient]);
+
+  // Fetch OEC price from Eloqura DEX OEC/USDC pool
+  useEffect(() => {
+    const fetchTokenPrice = async () => {
+      if (!publicClient) return;
+
+      try {
+        const pairAddress = await publicClient.readContract({
+          address: ELOQURA_FACTORY as `0x${string}`,
+          abi: FACTORY_ABI,
+          functionName: "getPair",
+          args: [OEC_TOKEN as `0x${string}`, USDC_TOKEN as `0x${string}`],
+        }) as `0x${string}`;
+
+        if (!pairAddress || pairAddress === "0x0000000000000000000000000000000000000000") return;
+
+        const [reserves, token0] = await Promise.all([
+          publicClient.readContract({ address: pairAddress, abi: PAIR_ABI, functionName: "getReserves" }) as Promise<[bigint, bigint, number]>,
+          publicClient.readContract({ address: pairAddress, abi: PAIR_ABI, functionName: "token0" }) as Promise<`0x${string}`>,
+        ]);
+
+        const isOecToken0 = token0.toLowerCase() === OEC_TOKEN.toLowerCase();
+        // OEC is 18 decimals, USDC is 6 decimals
+        const oecReserve = parseFloat(formatUnits(isOecToken0 ? reserves[0] : reserves[1], 18));
+        const usdcReserve = parseFloat(formatUnits(isOecToken0 ? reserves[1] : reserves[0], 6));
+
+        if (oecReserve > 0) {
+          setTokenPrice(usdcReserve / oecReserve);
+        }
+      } catch (error) {
+        console.error("Error fetching OEC price from Eloqura:", error);
+      }
+    };
+
+    fetchTokenPrice();
+    const interval = setInterval(fetchTokenPrice, 60000);
     return () => clearInterval(interval);
   }, [publicClient]);
 
@@ -448,7 +524,7 @@ export function Layout({
                 sidebarCollapsed ? "justify-center px-2" : "space-x-3 px-3"
               } py-2 rounded-lg text-left transition-colors group relative text-white hover:bg-white/5 transition-all duration-200`}
               style={{
-                background: 'linear-gradient(#000000, #000000) padding-box, linear-gradient(45deg, #a855f7, #3b82f6, #06b6d4) border-box',
+                background: 'linear-gradient(#000000, #000000) padding-box, linear-gradient(45deg, #06b6d4, #3b82f6, #a855f7) border-box',
                 border: '2px solid transparent'
               }}
               title={sidebarCollapsed ? "Oeconomia" : undefined}
@@ -475,7 +551,7 @@ export function Layout({
         )}
 
         {/* === MAIN COLUMN: header + page content (stacked) === */}
-        <div className="flex-1 lg:ml-0 relative flex flex-col">
+        <div className="flex-1 lg:ml-0 mr-9 relative flex flex-col">
           {/* Header */}
           <header className="sticky top-0 z-30 bg-gray-950 border-b-0 px-6 h-20 flex items-center shadow-xl shadow-black/70">
             <div className="flex items-center justify-between w-full">
@@ -575,7 +651,8 @@ export function Layout({
         {/* === END MAIN COLUMN === */}
       </div>
 
-      {/* Disclaimer Modal - REMOVED */}
+      {/* Ecosystem Sidebar */}
+      <EcosystemSidebar />
 
       {/* Support Modal */}
       {supportOpen && (

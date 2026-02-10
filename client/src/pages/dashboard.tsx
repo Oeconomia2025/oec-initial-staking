@@ -30,13 +30,50 @@ import { WalletConnect } from "@/components/wallet-connect";
 import { OECLoader } from "@/components/oec-loader";
 import { useAccount, usePublicClient, useSwitchChain } from "wagmi";
 import { sepolia } from "wagmi/chains";
-import { formatEther } from "viem";
+import { formatEther, formatUnits } from "viem";
 import MultiPoolStakingAPRABI from "@/services/abis/MultiPoolStakingAPR.json";
 import ERC20ABI from "@/services/abis/ERC20.json";
 
 // Contract addresses on Sepolia
 const STAKING_CONTRACT = "0x4a4da37c9a9f421efe3feb527fc16802ce756ec3";
 const OEC_TOKEN = "0x2b2fb8df4ac5d394f0d5674d7a54802e42a06aba";
+const ELOQURA_FACTORY = "0x1a4C7849Dd8f62AefA082360b3A8D857952B3b8e";
+const USDC_TOKEN = "0x1c7D4B196Cb0C7B01d743Fbc6116a902379C7238";
+
+// Minimal ABIs for Eloqura DEX price fetch
+const FACTORY_ABI = [
+  {
+    type: "function",
+    name: "getPair",
+    inputs: [
+      { name: "tokenA", type: "address" },
+      { name: "tokenB", type: "address" },
+    ],
+    outputs: [{ name: "pair", type: "address" }],
+    stateMutability: "view",
+  },
+] as const;
+
+const PAIR_ABI = [
+  {
+    type: "function",
+    name: "getReserves",
+    inputs: [],
+    outputs: [
+      { name: "reserve0", type: "uint112" },
+      { name: "reserve1", type: "uint112" },
+      { name: "blockTimestampLast", type: "uint32" },
+    ],
+    stateMutability: "view",
+  },
+  {
+    type: "function",
+    name: "token0",
+    inputs: [],
+    outputs: [{ name: "", type: "address" }],
+    stateMutability: "view",
+  },
+] as const;
 
 interface PoolStake {
   poolId: number;
@@ -62,6 +99,7 @@ export default function Dashboard() {
   // Check if on correct network - must be defined AND be sepolia
   const isCorrectNetwork = Boolean(chain && chain.id === sepolia.id);
 
+  const [tokenPrice, setTokenPrice] = useState(0);
   const [initialLoading, setInitialLoading] = useState(true);
   const [stats, setStats] = useState<UserStats>({
     walletBalance: 0n,
@@ -157,6 +195,40 @@ export default function Dashboard() {
     const interval = setInterval(() => fetchUserData(false), 30000);
     return () => clearInterval(interval);
   }, [publicClient, address]);
+
+  // Fetch OEC price from Eloqura DEX OEC/USDC pool
+  useEffect(() => {
+    const fetchTokenPrice = async () => {
+      if (!publicClient) return;
+      try {
+        const pairAddress = await publicClient.readContract({
+          address: ELOQURA_FACTORY as `0x${string}`,
+          abi: FACTORY_ABI,
+          functionName: "getPair",
+          args: [OEC_TOKEN as `0x${string}`, USDC_TOKEN as `0x${string}`],
+        }) as `0x${string}`;
+        if (!pairAddress || pairAddress === "0x0000000000000000000000000000000000000000") return;
+        const [reserves, token0] = await Promise.all([
+          publicClient.readContract({ address: pairAddress, abi: PAIR_ABI, functionName: "getReserves" }) as Promise<[bigint, bigint, number]>,
+          publicClient.readContract({ address: pairAddress, abi: PAIR_ABI, functionName: "token0" }) as Promise<`0x${string}`>,
+        ]);
+        const isOecToken0 = token0.toLowerCase() === OEC_TOKEN.toLowerCase();
+        const oecReserve = parseFloat(formatUnits(isOecToken0 ? reserves[0] : reserves[1], 18));
+        const usdcReserve = parseFloat(formatUnits(isOecToken0 ? reserves[1] : reserves[0], 6));
+        if (oecReserve > 0) setTokenPrice(usdcReserve / oecReserve);
+      } catch (error) {
+        console.error("Error fetching OEC price:", error);
+      }
+    };
+    fetchTokenPrice();
+    const interval = setInterval(fetchTokenPrice, 60000);
+    return () => clearInterval(interval);
+  }, [publicClient]);
+
+  const formatDollar = (oecAmount: bigint) => {
+    const usd = Number(formatEther(oecAmount)) * tokenPrice;
+    return usd.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+  };
 
   const formatNumber = (num: bigint, decimals = 0) => {
     const n = Number(formatEther(num));
@@ -325,6 +397,11 @@ export default function Dashboard() {
                 <DollarSign className="h-4 w-4 text-cyan-400" />
               </CardHeader>
               <CardContent>
+                {isConnected && tokenPrice > 0 && (
+                  <div className="text-sm font-semibold text-cyan-400 mb-0.5">
+                    ${formatDollar(stats.walletBalance)}
+                  </div>
+                )}
                 <div className="text-2xl font-bold">
                   {isConnected ? formatNumber(stats.walletBalance) : "0"}
                 </div>
@@ -342,6 +419,11 @@ export default function Dashboard() {
                 <DollarSign className="h-4 w-4 text-cyan-400" />
               </CardHeader>
               <CardContent>
+                {isConnected && tokenPrice > 0 && (
+                  <div className="text-sm font-semibold text-cyan-400 mb-0.5">
+                    ${formatDollar(stats.totalStaked)}
+                  </div>
+                )}
                 <div className="text-2xl font-bold">
                   {isConnected ? formatNumber(stats.totalStaked) : "0"}
                 </div>
@@ -354,11 +436,16 @@ export default function Dashboard() {
             <Card className="bg-gradient-to-r from-purple-500/10 to-pink-600/10 border border-purple-500/20">
               <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                 <CardTitle className="text-sm font-medium">
-                  OEC Pending Rewards
+                  Pending Rewards
                 </CardTitle>
                 <TrendingUp className="h-4 w-4 text-purple-400" />
               </CardHeader>
               <CardContent>
+                {isConnected && tokenPrice > 0 && (
+                  <div className="text-sm font-semibold text-green-400 mb-0.5">
+                    ${formatDollar(stats.totalEarned)}
+                  </div>
+                )}
                 <div className="text-2xl font-bold text-green-400">
                   {isConnected ? formatNumber(stats.totalEarned, 2) : "0.00"}
                 </div>
@@ -371,11 +458,14 @@ export default function Dashboard() {
             <Card className="bg-gradient-to-r from-purple-600/10 to-purple-800/10 border border-purple-500/20">
               <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                 <CardTitle className="text-sm font-medium">
-                  OEC Active Pools
+                  Active Pools
                 </CardTitle>
                 <Activity className="h-4 w-4 text-purple-400" />
               </CardHeader>
               <CardContent>
+                {isConnected && tokenPrice > 0 && (
+                  <div className="text-sm mb-0.5">&nbsp;</div>
+                )}
                 <div className="text-2xl font-bold">
                   {isConnected ? stats.activePools : "0"}
                 </div>
@@ -393,6 +483,11 @@ export default function Dashboard() {
                 <Clock className="h-4 w-4 text-cyan-400" />
               </CardHeader>
               <CardContent>
+                {isConnected && tokenPrice > 0 && (
+                  <div className="text-sm font-semibold text-cyan-400 mb-0.5">
+                    ${formatDollar(stats.walletBalance + stats.totalStaked)}
+                  </div>
+                )}
                 <div className="text-2xl font-bold">
                   {isConnected ? formatNumber(stats.walletBalance + stats.totalStaked) : "0"}
                 </div>
@@ -432,8 +527,12 @@ export default function Dashboard() {
                         </div>
                         <div className="text-right">
                           <p className="font-bold">{formatNumber(pool.staked)}</p>
+                          {tokenPrice > 0 && (
+                            <p className="text-xs text-cyan-400">${formatDollar(pool.staked)}</p>
+                          )}
                           <p className="text-xs text-green-400">
                             +{formatNumber(pool.earned, 2)} earned
+                            {tokenPrice > 0 && ` ($${formatDollar(pool.earned)})`}
                           </p>
                         </div>
                       </div>
