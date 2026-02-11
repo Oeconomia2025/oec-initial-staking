@@ -127,6 +127,7 @@ export function Layout({
   tokenName,
 }: LayoutProps) {
   const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [linksOpen, setLinksOpen] = useState(false);
   const [sidebarCollapsed, setSidebarCollapsed] = useState(() => {
     if (typeof window !== "undefined") {
       const saved = localStorage.getItem("sidebar-collapsed");
@@ -470,12 +471,15 @@ export function Layout({
           {/* Bottom section */}
           <div className="sticky bottom-0 bg-gray-950 p-2 border-t-0 flex flex-col space-y-2">
             {/* Links Button */}
-            <DropdownMenu>
+            <DropdownMenu onOpenChange={setLinksOpen}>
               <DropdownMenuTrigger asChild>
                 <button
                   className={`w-full flex items-center ${
                     sidebarCollapsed ? "justify-center px-2" : "space-x-3 px-3"
-                  } py-2 rounded-lg text-left transition-colors group relative bg-gray-800 hover:bg-gradient-to-r hover:from-cyan-500 hover:to-purple-600 transition-all duration-200`}
+                  } py-2 rounded-lg text-left transition-all duration-200 group relative text-white focus:outline-none focus:ring-0 focus:border-none outline-none ring-0 ${
+                    linksOpen ? "shadow-lg" : "bg-gray-800 hover:bg-gradient-to-r hover:from-cyan-500 hover:to-purple-600"
+                  }`}
+                  style={linksOpen ? { background: "linear-gradient(45deg, #00d4ff, #ff00ff)" } : {}}
                   title={sidebarCollapsed ? "Links" : undefined}
                 >
                   <Globe className="w-5 h-5 text-white flex-shrink-0" />
