@@ -58,7 +58,7 @@ const PAIR_ABI = [
 
 // Icons (trimmed to only those used here)
 import {
-  BarChart3,
+  LayoutDashboard,
   Lock,
   Calculator,
   Menu,
@@ -386,7 +386,7 @@ export function Layout({
   };
 
   const sidebarItems = [
-    { icon: BarChart3, label: "Dashboard", path: "/", active: location === "/" || location === "/dashboard" },
+    { icon: LayoutDashboard, label: "Dashboard", path: "/", active: location === "/" || location === "/dashboard" },
     { icon: Lock, label: "Staking Pools", path: "/pools", active: location === "/pools" },
     { icon: Calculator, label: "ROI Calc", path: "/calculator", active: location === "/calculator" },
     { icon: Droplets, label: "Faucet", path: "/faucet", active: location === "/faucet" },
@@ -582,7 +582,7 @@ export function Layout({
                 className="w-2 h-2 rounded-full bg-emerald-500 flex-shrink-0"
                 style={{ boxShadow: "0 0 6px #22C55E44" }}
               />
-              {!sidebarCollapsed && <span>Sepolia Testnet</span>}
+              {!sidebarCollapsed && <span className="whitespace-nowrap">Sepolia Testnet</span>}
             </div>
           </div>
         </aside>
