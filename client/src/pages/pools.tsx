@@ -5,7 +5,6 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import {
   Lock,
-  Clock,
   TrendingUp,
   Wallet,
   ChevronDown,
@@ -58,6 +57,7 @@ export default function Pools() {
   const [allowance, setAllowance] = useState<bigint>(0n);
   const [loading, setLoading] = useState(true);
   const [txPending, setTxPending] = useState(false);
+  const [txStep, setTxStep] = useState<string | null>(null);
   const [depositTimestamps, setDepositTimestamps] = useState<{ [poolId: number]: bigint }>({});
   const [earlyPenaltyBps, setEarlyPenaltyBps] = useState<{ [poolId: number]: bigint }>({});
   const [earlyWithdrawModal, setEarlyWithdrawModal] = useState<{
@@ -281,7 +281,8 @@ export default function Pools() {
 
     try {
       setTxPending(true);
-      toast({ title: "Approving OEC...", description: "Please confirm in your wallet" });
+      setTxStep("Step 1 of 2: Approving...");
+      toast({ title: "Step 1 of 2: Approving OEC...", description: "Please confirm in your wallet" });
 
       const hash = await walletClient.writeContract({
         address: OEC_TOKEN,
@@ -292,12 +293,14 @@ export default function Pools() {
 
       await publicClient?.waitForTransactionReceipt({ hash });
       setAllowance(parseEther("1000000000"));
-      toast({ title: "OEC Approved!", description: "You can now stake your tokens" });
+      setTxStep(null);
+      toast({ title: "OEC Approved!", description: "You can now stake your tokens (Step 2 of 2)" });
     } catch (error) {
       console.error("Approval failed:", error);
       toast({ title: "Approval failed", description: "Transaction was rejected or failed", variant: "destructive" });
     } finally {
       setTxPending(false);
+      setTxStep(null);
     }
   };
 
@@ -306,7 +309,29 @@ export default function Pools() {
 
     try {
       setTxPending(true);
+      setTxStep("Step 2 of 2: Staking...");
       const amount = parseEther(stakeAmount[poolId]);
+
+      // Auto-claim pending rewards before staking
+      const pool = pools.find(p => p.id === poolId);
+      if (pool && pool.userEarned > 0n) {
+        try {
+          setTxStep("Claiming rewards before staking...");
+          toast({ title: "Claiming pending rewards first...", description: "Please confirm in your wallet" });
+          const claimHash = await walletClient.writeContract({
+            address: STAKING_CONTRACT,
+            abi: MultiPoolStakingAPRABI,
+            functionName: "getReward",
+            args: [BigInt(poolId)],
+          });
+          await publicClient?.waitForTransactionReceipt({ hash: claimHash });
+          toast({ title: "Rewards claimed!", description: `Claimed ${formatNumber(pool.userEarned)} OEC` });
+        } catch (claimError) {
+          console.warn("Auto-claim failed, proceeding with stake:", claimError);
+        }
+        setTxStep("Step 2 of 2: Staking...");
+      }
+
       toast({ title: "Staking OEC...", description: "Please confirm in your wallet" });
 
       const hash = await walletClient.writeContract({
@@ -339,6 +364,7 @@ export default function Pools() {
       }
     } finally {
       setTxPending(false);
+      setTxStep(null);
     }
   };
 
@@ -348,6 +374,25 @@ export default function Pools() {
     try {
       setTxPending(true);
       const amount = parseEther(stakeAmount[poolId]);
+
+      // Auto-claim pending rewards before unstaking
+      const pool = pools.find(p => p.id === poolId);
+      if (pool && pool.userEarned > 0n) {
+        try {
+          toast({ title: "Claiming pending rewards first...", description: "Please confirm in your wallet" });
+          const claimHash = await walletClient.writeContract({
+            address: STAKING_CONTRACT,
+            abi: MultiPoolStakingAPRABI,
+            functionName: "getReward",
+            args: [BigInt(poolId)],
+          });
+          await publicClient?.waitForTransactionReceipt({ hash: claimHash });
+          toast({ title: "Rewards claimed!", description: `Claimed ${formatNumber(pool.userEarned)} OEC` });
+        } catch (claimError) {
+          console.warn("Auto-claim failed, proceeding with unstake:", claimError);
+        }
+      }
+
       toast({ title: "Withdrawing...", description: "Please confirm in your wallet" });
 
       const hash = await walletClient.writeContract({
@@ -402,6 +447,24 @@ export default function Pools() {
     try {
       setTxPending(true);
       setEarlyWithdrawModal(prev => ({ ...prev, isOpen: false }));
+
+      // Auto-claim pending rewards before early withdrawal
+      if (pool.userEarned > 0n) {
+        try {
+          toast({ title: "Claiming pending rewards first...", description: "Please confirm in your wallet" });
+          const claimHash = await walletClient.writeContract({
+            address: STAKING_CONTRACT,
+            abi: MultiPoolStakingAPRABI,
+            functionName: "getReward",
+            args: [BigInt(earlyWithdrawModal.poolId!)],
+          });
+          await publicClient?.waitForTransactionReceipt({ hash: claimHash });
+          toast({ title: "Rewards claimed!", description: `Claimed ${formatNumber(pool.userEarned)} OEC` });
+        } catch (claimError) {
+          console.warn("Auto-claim failed, proceeding with early withdraw:", claimError);
+        }
+      }
+
       toast({ title: "Processing early withdrawal...", description: "Please confirm in your wallet" });
 
       const hash = await walletClient.writeContract({
@@ -434,6 +497,56 @@ export default function Pools() {
         toast({ title: "Transaction cancelled", description: "You rejected the transaction", variant: "destructive" });
       } else {
         toast({ title: "Early withdraw failed", description: "Transaction was rejected or failed", variant: "destructive" });
+      }
+    } finally {
+      setTxPending(false);
+    }
+  };
+
+  const totalPendingRewards = pools.reduce((sum, p) => sum + p.userEarned, 0n);
+
+  const handleClaimAllRewards = async () => {
+    if (!walletClient || !address) return;
+
+    const claimable = pools.filter(p => p.userEarned > 0n);
+    if (claimable.length === 0) return;
+
+    try {
+      setTxPending(true);
+
+      for (let i = 0; i < claimable.length; i++) {
+        const pool = claimable[i];
+        toast({
+          title: `Claiming rewards (${i + 1}/${claimable.length})...`,
+          description: `${pool.name} — please confirm in your wallet`,
+        });
+
+        const hash = await walletClient.writeContract({
+          address: STAKING_CONTRACT,
+          abi: MultiPoolStakingAPRABI,
+          functionName: "getReward",
+          args: [BigInt(pool.id)],
+        });
+
+        try {
+          await publicClient?.waitForTransactionReceipt({ hash });
+        } catch (receiptError) {
+          console.warn(`Receipt wait failed for pool ${pool.id}, continuing...`, receiptError);
+        }
+      }
+
+      toast({
+        title: "All rewards claimed!",
+        description: `Claimed ${formatNumber(totalPendingRewards)} OEC from ${claimable.length} pool${claimable.length > 1 ? "s" : ""}`,
+      });
+
+      window.location.reload();
+    } catch (error: any) {
+      console.error("Claim all failed:", error);
+      if (error?.message?.includes("User rejected") || error?.message?.includes("denied")) {
+        toast({ title: "Transaction cancelled", description: "You rejected the transaction", variant: "destructive" });
+      } else {
+        toast({ title: "Claim failed", description: "Transaction was rejected or failed", variant: "destructive" });
       }
     } finally {
       setTxPending(false);
@@ -537,14 +650,30 @@ export default function Pools() {
         {/* User Balance Card */}
         {isConnected && isCorrectNetwork && (
           <Card className="crypto-card p-3 border mb-3 bg-gradient-to-r from-blue-500/10 to-purple-500/10 border-blue-500/30">
-            <div className="flex items-center justify-between">
+            <div className="flex items-center justify-between flex-wrap gap-2">
               <div>
                 <p className="text-xs text-gray-400">Your OEC Balance</p>
                 <p className="text-lg font-bold">{formatNumber(userTokenBalance)}</p>
               </div>
-              <div>
+              <div className="hidden sm:block">
                 <p className="text-xs text-gray-400">Token Address</p>
                 <p className="text-xs font-mono">{OEC_TOKEN.slice(0, 10)}...{OEC_TOKEN.slice(-8)}</p>
+              </div>
+              <div className="flex items-center gap-3">
+                {totalPendingRewards > 0n && (
+                  <div className="text-right">
+                    <p className="text-xs text-gray-400">Pending Rewards</p>
+                    <p className="text-sm font-semibold text-green-400">{formatNumber(totalPendingRewards)} OEC</p>
+                  </div>
+                )}
+                <Button
+                  className="bg-green-600 hover:bg-green-700 text-white text-xs font-semibold px-4 py-2"
+                  onClick={handleClaimAllRewards}
+                  disabled={txPending || totalPendingRewards === 0n}
+                >
+                  {txPending ? <Loader2 className="w-4 h-4 animate-spin mr-1" /> : null}
+                  Claim All
+                </Button>
               </div>
             </div>
           </Card>
@@ -571,20 +700,6 @@ export default function Pools() {
                     <Lock className="w-3 h-3 sm:w-4 sm:h-4 flex-shrink-0" />
                     <div className="min-w-0 flex-1">
                       <h3 className="text-sm sm:text-base font-semibold truncate">{pool.name}</h3>
-                      <div className="flex items-center space-x-1 text-[0.6rem] sm:text-xs opacity-90">
-                        <Clock className="w-2 h-2 sm:w-3 sm:h-3 flex-shrink-0" />
-                        <span className="truncate">{formatLockPeriod(pool.lockPeriod)}</span>
-                        {pool.userBalance > 0n && (
-                          <>
-                            <span className="hidden sm:inline">—</span>
-                            <span className={`hidden sm:inline ${getUnlockStatus(pool.id, pool.lockPeriod).color}`}>
-                              {getUnlockStatus(pool.id, pool.lockPeriod).text}
-                            </span>
-                          </>
-                        )}
-                        <span className="hidden sm:inline">—</span>
-                        <span className="hidden sm:inline">{formatNumber(pool.totalSupply)} staked</span>
-                      </div>
                     </div>
                   </div>
 
@@ -682,6 +797,9 @@ export default function Pools() {
                             Balance: {formatNumber(userTokenBalance)} OEC
                           </p>
 
+                          {txStep && (
+                            <p className="text-xs text-cyan-400 font-medium text-center animate-pulse">{txStep}</p>
+                          )}
                           {allowance === 0n ? (
                             <Button
                               className="w-full bg-yellow-600 hover:bg-yellow-700 text-white py-1.5 text-xs sm:text-sm font-semibold"
@@ -689,7 +807,7 @@ export default function Pools() {
                               disabled={txPending || !isConnected}
                             >
                               {txPending ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : null}
-                              Approve OEC
+                              {txPending ? "Approving..." : "Step 1 of 2: Approve OEC"}
                             </Button>
                           ) : (
                             <Button
@@ -698,7 +816,7 @@ export default function Pools() {
                               disabled={txPending || !isConnected || !stakeAmount[pool.id]}
                             >
                               {txPending ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : null}
-                              Stake
+                              {txPending ? "Staking..." : "Step 2 of 2: Stake"}
                             </Button>
                           )}
                         </div>
@@ -793,7 +911,7 @@ export default function Pools() {
                               <span className="font-semibold text-[0.6rem] sm:text-xs">{formatLockPeriod(pool.lockPeriod)}</span>
                             </div>
                           </div>
-                          <p className="text-[0.6rem] text-yellow-400 p-2">
+                          <p className="text-base font-semibold text-yellow-400 p-2">
                             Note: Withdrawing before lock period ends will use Early Withdraw with 10% penalty.
                           </p>
                         </div>
