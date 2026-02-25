@@ -246,23 +246,34 @@ export function Layout({
       if (!publicClient) return;
 
       try {
-        const logs = await publicClient.getLogs({
-          address: STAKING_CONTRACT,
-          event: {
-            type: "event",
-            name: "Staked",
-            inputs: [
-              { name: "poolId", type: "uint256", indexed: true },
-              { name: "user", type: "address", indexed: true },
-              { name: "creditedAmount", type: "uint256", indexed: false },
-            ],
-          },
-          fromBlock: 0n,
-          toBlock: "latest",
-        });
+        // Get current block and scan last 500,000 blocks (~70 days on Sepolia)
+        const currentBlock = await publicClient.getBlockNumber();
+        const fromBlock = currentBlock > 500_000n ? currentBlock - 500_000n : 0n;
 
-        const uniqueStakers = new Set(logs.map((log) => log.args.user));
-        setStakingActivity({ stakers: uniqueStakers.size, stakes: logs.length });
+        // Chunk into 5,000-block segments to avoid RPC limits
+        const CHUNK = 5_000n;
+        const allLogs: any[] = [];
+        for (let start = fromBlock; start <= currentBlock; start += CHUNK) {
+          const end = start + CHUNK - 1n > currentBlock ? currentBlock : start + CHUNK - 1n;
+          const chunk = await publicClient.getLogs({
+            address: STAKING_CONTRACT,
+            event: {
+              type: "event",
+              name: "Staked",
+              inputs: [
+                { name: "poolId", type: "uint256", indexed: true },
+                { name: "user", type: "address", indexed: true },
+                { name: "creditedAmount", type: "uint256", indexed: false },
+              ],
+            },
+            fromBlock: start,
+            toBlock: end,
+          });
+          allLogs.push(...chunk);
+        }
+
+        const uniqueStakers = new Set(allLogs.map((log) => log.args.user));
+        setStakingActivity({ stakers: uniqueStakers.size, stakes: allLogs.length });
       } catch (error) {
         console.error("Error fetching staking activity:", error);
       }
@@ -697,21 +708,21 @@ export function Layout({
               {/* Right side: pills + socials */}
               <div className="flex items-center space-x-4">
                 {/* Stats cards */}
-                <div className="hidden md:grid grid-cols-6 gap-1.5">
+                <div className="hidden md:grid grid-cols-6 gap-2 -my-2">
                   {[
                     { label: "Price", value: `$${formatPrice(tokenPrice)}` },
                     { label: "Supply", value: formatLargeNumber(tokenStats.totalSupply) },
-                    { label: "OEC Locked", value: formatLargeNumber(tokenStats.tvl) },
+                    { label: "OEC Locked", value: Math.floor(Number(formatEther(tokenStats.tvl))).toLocaleString() },
                     { label: "TVL", value: `$${formatDollarValue(tvlInDollars)}` },
                     { label: "Stakers", value: stakingActivity.stakers.toLocaleString() },
                     { label: "Stakes", value: stakingActivity.stakes.toLocaleString() },
                   ].map((stat) => (
                     <div
                       key={stat.label}
-                      className="bg-gray-800/80 rounded-lg px-3 py-1.5 border border-cyan-400/20 text-center min-w-[90px]"
+                      className="rounded-lg px-4 py-2.5 border border-purple-500/25 text-center min-w-[130px] bg-gradient-to-b from-purple-900/60 to-indigo-900/40"
                     >
-                      <p className="text-[10px] text-gray-400 leading-tight">{stat.label}</p>
-                      <p className="text-xs font-semibold text-cyan-400 leading-tight">{stat.value}</p>
+                      <p className="text-[11px] text-gray-400 leading-snug">{stat.label}</p>
+                      <p className="text-sm font-semibold text-white leading-snug">{stat.value}</p>
                     </div>
                   ))}
                 </div>
