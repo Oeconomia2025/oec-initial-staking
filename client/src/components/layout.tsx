@@ -148,6 +148,7 @@ export function Layout({
     totalSupply: 0n,
     tvl: 0n,
   });
+  const [stakingActivity, setStakingActivity] = useState({ stakers: 0, stakes: 0 });
 
   // Token price from Eloqura DEX OEC/USDC pool
   const [tokenPrice, setTokenPrice] = useState(0);
@@ -236,6 +237,39 @@ export function Layout({
 
     fetchTokenStats();
     const interval = setInterval(fetchTokenStats, 60000); // Refresh every minute
+    return () => clearInterval(interval);
+  }, [publicClient]);
+
+  // Fetch staker & stake counts from Staked event logs
+  useEffect(() => {
+    const fetchStakingActivity = async () => {
+      if (!publicClient) return;
+
+      try {
+        const logs = await publicClient.getLogs({
+          address: STAKING_CONTRACT,
+          event: {
+            type: "event",
+            name: "Staked",
+            inputs: [
+              { name: "poolId", type: "uint256", indexed: true },
+              { name: "user", type: "address", indexed: true },
+              { name: "creditedAmount", type: "uint256", indexed: false },
+            ],
+          },
+          fromBlock: 0n,
+          toBlock: "latest",
+        });
+
+        const uniqueStakers = new Set(logs.map((log) => log.args.user));
+        setStakingActivity({ stakers: uniqueStakers.size, stakes: logs.length });
+      } catch (error) {
+        console.error("Error fetching staking activity:", error);
+      }
+    };
+
+    fetchStakingActivity();
+    const interval = setInterval(fetchStakingActivity, 120000);
     return () => clearInterval(interval);
   }, [publicClient]);
 
@@ -662,20 +696,24 @@ export function Layout({
 
               {/* Right side: pills + socials */}
               <div className="flex items-center space-x-4">
-                {/* Stats pills */}
-                <div className="hidden md:flex items-center gap-2">
-                  <div className="bg-gray-800 rounded-full px-5 py-1 text-xs font-medium text-cyan-400 border border-cyan-400/30">
-                    Price: ${formatPrice(tokenPrice)}
-                  </div>
-                  <div className="bg-gray-800 rounded-full px-3 py-1 text-xs font-medium text-cyan-400 border border-cyan-400/30">
-                    Supply: {formatLargeNumber(tokenStats.totalSupply)}
-                  </div>
-                  <div className="bg-gray-800 rounded-full px-5 py-1 text-xs font-medium text-cyan-400 border border-cyan-400/30">
-                    OEC Locked: {formatLargeNumber(tokenStats.tvl)}
-                  </div>
-                  <div className="bg-gray-800 rounded-full px-5 py-1 text-xs font-medium text-cyan-400 border border-cyan-400/30">
-                    TVL: ${formatDollarValue(tvlInDollars)}
-                  </div>
+                {/* Stats cards */}
+                <div className="hidden md:grid grid-cols-6 gap-1.5">
+                  {[
+                    { label: "Price", value: `$${formatPrice(tokenPrice)}` },
+                    { label: "Supply", value: formatLargeNumber(tokenStats.totalSupply) },
+                    { label: "OEC Locked", value: formatLargeNumber(tokenStats.tvl) },
+                    { label: "TVL", value: `$${formatDollarValue(tvlInDollars)}` },
+                    { label: "Stakers", value: stakingActivity.stakers.toLocaleString() },
+                    { label: "Stakes", value: stakingActivity.stakes.toLocaleString() },
+                  ].map((stat) => (
+                    <div
+                      key={stat.label}
+                      className="bg-gray-800/80 rounded-lg px-3 py-1.5 border border-cyan-400/20 text-center min-w-[90px]"
+                    >
+                      <p className="text-[10px] text-gray-400 leading-tight">{stat.label}</p>
+                      <p className="text-xs font-semibold text-cyan-400 leading-tight">{stat.value}</p>
+                    </div>
+                  ))}
                 </div>
 
                 </div>
