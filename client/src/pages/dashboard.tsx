@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { Layout } from "@/components/layout";
 import {
   Card,
@@ -9,6 +9,7 @@ import {
 } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
+import { Button } from "@/components/ui/button";
 import {
   Trophy,
   Award,
@@ -25,18 +26,22 @@ import {
   Wallet,
   Loader2,
   ExternalLink,
+  Gift,
+  CheckCircle,
 } from "lucide-react";
 import { WalletConnect } from "@/components/wallet-connect";
 import { OECLoader } from "@/components/oec-loader";
-import { useAccount, usePublicClient, useSwitchChain } from "wagmi";
+import { useAccount, usePublicClient, useWalletClient, useSwitchChain } from "wagmi";
 import { sepolia } from "wagmi/chains";
 import { formatEther, formatUnits } from "viem";
 import MultiPoolStakingAPRABI from "@/services/abis/MultiPoolStakingAPR.json";
 import ERC20ABI from "@/services/abis/ERC20.json";
+import AchievementRewardsABI from "@/services/abis/AchievementRewards.json";
 
 // Contract addresses on Sepolia
-const STAKING_CONTRACT = "0x4a4da37c9a9f421efe3feb527fc16802ce756ec3";
-const OEC_TOKEN = "0x2b2fb8df4ac5d394f0d5674d7a54802e42a06aba";
+const STAKING_CONTRACT = "0xd12664c1f09fa1561b5f952259d1eb5555af3265";
+const OEC_TOKEN = "0x00904218319a045a96d776ec6a970f54741208e6";
+const ACHIEVEMENT_CONTRACT = "0xbb0805254d328d1a542efb197b3a922c3fd97063";
 const ELOQURA_FACTORY = "0x1a4C7849Dd8f62AefA082360b3A8D857952B3b8e";
 const USDC_TOKEN = "0x1c7D4B196Cb0C7B01d743Fbc6116a902379C7238";
 
@@ -94,6 +99,7 @@ interface UserStats {
 export default function Dashboard() {
   const { isConnected, address, chain } = useAccount();
   const publicClient = usePublicClient();
+  const { data: walletClient } = useWalletClient();
   const { switchChain } = useSwitchChain();
 
   // Check if on correct network - must be defined AND be sepolia
@@ -108,6 +114,79 @@ export default function Dashboard() {
     activePools: 0,
     poolStakes: [],
   });
+
+  // Achievement on-chain state
+  const [achievementEligible, setAchievementEligible] = useState<boolean[]>([false, false, false, false, false, false]);
+  const [achievementClaimed, setAchievementClaimed] = useState<boolean[]>([false, false, false, false, false, false]);
+  const [claimingId, setClaimingId] = useState<number | null>(null);
+  const [claimingAll, setClaimingAll] = useState(false);
+  const [claimSuccess, setClaimSuccess] = useState<number | null>(null);
+
+  // Fetch achievement status from contract
+  const fetchAchievementStatus = useCallback(async () => {
+    if (!publicClient || !address) return;
+    try {
+      const result = await publicClient.readContract({
+        address: ACHIEVEMENT_CONTRACT,
+        abi: AchievementRewardsABI,
+        functionName: "getUserStatus",
+        args: [address],
+      }) as [boolean[], boolean[]];
+      setAchievementEligible([...result[0]]);
+      setAchievementClaimed([...result[1]]);
+    } catch (error) {
+      console.error("Error fetching achievement status:", error);
+    }
+  }, [publicClient, address]);
+
+  useEffect(() => {
+    fetchAchievementStatus();
+    const interval = setInterval(fetchAchievementStatus, 30000);
+    return () => clearInterval(interval);
+  }, [fetchAchievementStatus]);
+
+  // Claim a single achievement
+  const handleClaim = async (achievementId: number) => {
+    if (!walletClient || !publicClient || !address) return;
+    setClaimingId(achievementId);
+    try {
+      const hash = await walletClient.writeContract({
+        address: ACHIEVEMENT_CONTRACT,
+        abi: AchievementRewardsABI,
+        functionName: "claim",
+        args: [BigInt(achievementId)],
+      });
+      await publicClient.waitForTransactionReceipt({ hash });
+      setClaimSuccess(achievementId);
+      setTimeout(() => setClaimSuccess(null), 3000);
+      await fetchAchievementStatus();
+    } catch (error: any) {
+      console.error("Claim failed:", error);
+    } finally {
+      setClaimingId(null);
+    }
+  };
+
+  // Claim all eligible achievements
+  const handleClaimAll = async () => {
+    if (!walletClient || !publicClient || !address) return;
+    setClaimingAll(true);
+    try {
+      const hash = await walletClient.writeContract({
+        address: ACHIEVEMENT_CONTRACT,
+        abi: AchievementRewardsABI,
+        functionName: "claimAll",
+      });
+      await publicClient.waitForTransactionReceipt({ hash });
+      setClaimSuccess(-1); // -1 = claimed all
+      setTimeout(() => setClaimSuccess(null), 3000);
+      await fetchAchievementStatus();
+    } catch (error: any) {
+      console.error("Claim all failed:", error);
+    } finally {
+      setClaimingAll(false);
+    }
+  };
 
   // Fetch user data from contracts
   useEffect(() => {
@@ -246,69 +325,72 @@ export default function Dashboard() {
     return `${Math.floor(s / 86400)}d`;
   };
 
-  // Calculate achievements based on real data
+  // Achievement definitions — eligibility is checked on-chain by the AchievementRewards contract
+  // IDs match the contract: 0-5
   const achievements = [
     {
-      id: 1,
+      id: 0,
       title: "First Stake",
       description: "Complete your first staking transaction",
       icon: Star,
-      completed: stats.totalStaked > 0n,
-      progress: stats.totalStaked > 0n ? 100 : 0,
+      eligible: achievementEligible[0],
+      claimed: achievementClaimed[0],
       reward: "5 OEC",
       category: "Beginner",
     },
     {
-      id: 2,
+      id: 1,
       title: "Diamond Hands",
-      description: "Hold staked tokens for 30 days",
+      description: "Hold staked tokens in a 30-day+ pool for 30 days",
       icon: Crown,
-      completed: false,
-      progress: 0,
+      eligible: achievementEligible[1],
+      claimed: achievementClaimed[1],
       reward: "50 OEC",
       category: "Loyalty",
     },
     {
-      id: 3,
-      title: "Pool Pioneer",
-      description: "Stake in 3 different pools",
+      id: 2,
+      title: "Pool Explorer",
+      description: "Stake 100+ OEC each in 2 different long-term pools",
       icon: Trophy,
-      completed: stats.activePools >= 3,
-      progress: Math.min((stats.activePools / 3) * 100, 100),
+      eligible: achievementEligible[2],
+      claimed: achievementClaimed[2],
       reward: "100 OEC",
       category: "Explorer",
     },
     {
-      id: 4,
+      id: 3,
       title: "High Roller",
-      description: "Stake over 10,000 OEC tokens",
+      description: "Stake 10,000+ OEC across 30-day+ pools",
       icon: Medal,
-      completed: Number(formatEther(stats.totalStaked)) >= 10000,
-      progress: Math.min((Number(formatEther(stats.totalStaked)) / 10000) * 100, 100),
+      eligible: achievementEligible[3],
+      claimed: achievementClaimed[3],
       reward: "500 OEC",
       category: "Whale",
     },
     {
-      id: 5,
+      id: 4,
       title: "Reward Hunter",
-      description: "Earn 100 OEC in rewards",
+      description: "Earn 100+ OEC in staking rewards",
       icon: Zap,
-      completed: Number(formatEther(stats.totalEarned)) >= 100,
-      progress: Math.min((Number(formatEther(stats.totalEarned)) / 100) * 100, 100),
+      eligible: achievementEligible[4],
+      claimed: achievementClaimed[4],
       reward: "200 OEC",
       category: "Strategy",
     },
     {
-      id: 6,
+      id: 5,
       title: "Hodler",
-      description: "Have 100,000+ OEC total (wallet + staked)",
+      description: "Stake 2,000+ OEC in a long-term pool",
       icon: Target,
-      completed: Number(formatEther(stats.walletBalance + stats.totalStaked)) >= 100000,
-      progress: Math.min((Number(formatEther(stats.walletBalance + stats.totalStaked)) / 100000) * 100, 100),
-      reward: "1000 OEC",
+      eligible: achievementEligible[5],
+      claimed: achievementClaimed[5],
+      reward: "1,000 OEC",
       category: "Dedication",
     },
   ];
+
+  const claimableCount = achievements.filter(a => a.eligible && !a.claimed).length;
 
   if (initialLoading && isConnected) {
     return (
@@ -406,7 +488,7 @@ export default function Dashboard() {
                   {isConnected ? formatNumber(stats.walletBalance) : "0"}
                 </div>
                 <p className="text-xs text-muted-foreground">
-                  {isConnected ? "Available to stake" : "Connect wallet to see balance"}
+                  Available to stake
                 </p>
               </CardContent>
             </Card>
@@ -428,7 +510,7 @@ export default function Dashboard() {
                   {isConnected ? formatNumber(stats.totalStaked) : "0"}
                 </div>
                 <p className="text-xs text-muted-foreground">
-                  {isConnected ? "Across all pools" : "Connect wallet to see staked amount"}
+                  Across all pools
                 </p>
               </CardContent>
             </Card>
@@ -450,7 +532,7 @@ export default function Dashboard() {
                   {isConnected ? formatNumber(stats.totalEarned, 2) : "0.00"}
                 </div>
                 <p className="text-xs text-muted-foreground">
-                  {isConnected ? "Available to claim" : "Connect wallet to see rewards"}
+                  Available to claim
                 </p>
               </CardContent>
             </Card>
@@ -470,7 +552,7 @@ export default function Dashboard() {
                   {isConnected ? stats.activePools : "0"}
                 </div>
                 <p className="text-xs text-muted-foreground">
-                  {isConnected ? "Earning rewards" : "Connect wallet to see active pools"}
+                  Earning rewards
                 </p>
               </CardContent>
             </Card>
@@ -492,11 +574,144 @@ export default function Dashboard() {
                   {isConnected ? formatNumber(stats.walletBalance + stats.totalStaked) : "0"}
                 </div>
                 <p className="text-xs text-muted-foreground">
-                  {isConnected ? "Wallet + Staked" : "Connect wallet to see holdings"}
+                  Wallet + Staked
                 </p>
               </CardContent>
             </Card>
           </div>
+
+          {/* Achievements Section */}
+          <Card>
+            <CardHeader>
+              <div className="flex items-center justify-between">
+                <div>
+                  <CardTitle className="flex items-center space-x-2">
+                    <Trophy className="w-5 h-5" />
+                    <span>Pool Achievements</span>
+                  </CardTitle>
+                  <CardDescription>
+                    {isConnected
+                      ? `${achievements.filter(a => a.claimed).length}/${achievements.length} claimed`
+                      : "Connect your wallet to track achievements"}
+                  </CardDescription>
+                </div>
+                {isConnected && claimableCount > 1 && (
+                  <Button
+                    onClick={handleClaimAll}
+                    disabled={claimingAll || claimingId !== null}
+                    className="bg-gradient-to-r from-yellow-500 to-orange-500 hover:from-yellow-600 hover:to-orange-600 text-black font-semibold"
+                  >
+                    {claimingAll ? (
+                      <><Loader2 className="w-4 h-4 mr-2 animate-spin" /> Claiming...</>
+                    ) : claimSuccess === -1 ? (
+                      <><CheckCircle className="w-4 h-4 mr-2" /> Claimed!</>
+                    ) : (
+                      <><Gift className="w-4 h-4 mr-2" /> Claim All ({claimableCount})</>
+                    )}
+                  </Button>
+                )}
+              </div>
+            </CardHeader>
+            <CardContent>
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                {achievements.map((achievement) => {
+                  const canClaim = achievement.eligible && !achievement.claimed;
+                  const isClaiming = claimingId === achievement.id;
+                  const justClaimed = claimSuccess === achievement.id;
+
+                  return (
+                    <Card
+                      key={achievement.id}
+                      className={`relative ${
+                        achievement.claimed
+                          ? "border-green-500/20 bg-green-500/5"
+                          : canClaim
+                          ? "border-yellow-500/30 bg-yellow-500/5"
+                          : "border-muted"
+                      }`}
+                    >
+                      <CardHeader className="pb-3">
+                        <div className="flex items-start justify-between">
+                          <div className="flex items-center space-x-2">
+                            <achievement.icon
+                              className={`w-5 h-5 ${
+                                achievement.claimed
+                                  ? "text-green-500"
+                                  : canClaim
+                                  ? "text-yellow-500"
+                                  : "text-muted-foreground"
+                              }`}
+                            />
+                            <Badge
+                              variant={
+                                achievement.claimed ? "default" : "secondary"
+                              }
+                              className="text-xs"
+                            >
+                              {achievement.category}
+                            </Badge>
+                          </div>
+                          {achievement.claimed && (
+                            <Badge
+                              variant="outline"
+                              className="text-green-500 border-green-500"
+                            >
+                              Claimed
+                            </Badge>
+                          )}
+                          {canClaim && !achievement.claimed && (
+                            <Badge
+                              variant="outline"
+                              className="text-yellow-500 border-yellow-500 animate-pulse"
+                            >
+                              Ready!
+                            </Badge>
+                          )}
+                        </div>
+                        <div>
+                          <h3 className="font-semibold">{achievement.title}</h3>
+                          <p className="text-sm text-muted-foreground">
+                            {achievement.description}
+                          </p>
+                        </div>
+                      </CardHeader>
+                      <CardContent className="pt-0">
+                        <div className="space-y-2">
+                          <div className="flex justify-between items-center text-sm">
+                            <span className="text-muted-foreground">Reward:</span>
+                            <span className="font-medium text-blue-500">
+                              {achievement.reward}
+                            </span>
+                          </div>
+                          {isConnected && canClaim && (
+                            <Button
+                              onClick={() => handleClaim(achievement.id)}
+                              disabled={isClaiming || claimingAll}
+                              className="w-full bg-gradient-to-r from-yellow-500 to-orange-500 hover:from-yellow-600 hover:to-orange-600 text-black font-semibold"
+                              size="sm"
+                            >
+                              {isClaiming ? (
+                                <><Loader2 className="w-4 h-4 mr-2 animate-spin" /> Claiming...</>
+                              ) : justClaimed ? (
+                                <><CheckCircle className="w-4 h-4 mr-2" /> Claimed!</>
+                              ) : (
+                                <><Gift className="w-4 h-4 mr-2" /> Claim {achievement.reward}</>
+                              )}
+                            </Button>
+                          )}
+                          {isConnected && achievement.claimed && (
+                            <div className="flex items-center justify-center text-sm text-green-500 py-1">
+                              <CheckCircle className="w-4 h-4 mr-1" /> Reward collected
+                            </div>
+                          )}
+                        </div>
+                      </CardContent>
+                    </Card>
+                  );
+                })}
+              </div>
+            </CardContent>
+          </Card>
 
           {/* Active Stakes Section */}
           {isConnected && stats.poolStakes.some(p => p.staked > 0n) && (
@@ -542,91 +757,6 @@ export default function Dashboard() {
             </Card>
           )}
 
-          {/* Achievements Section */}
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center space-x-2">
-                <Trophy className="w-5 h-5" />
-                <span>Pool Achievements</span>
-              </CardTitle>
-              <CardDescription>
-                {isConnected
-                  ? `${achievements.filter(a => a.completed).length}/${achievements.length} completed`
-                  : "Connect your wallet to track achievements"}
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                {achievements.map((achievement) => (
-                  <Card
-                    key={achievement.id}
-                    className={`relative ${
-                      achievement.completed
-                        ? "border-green-500/20 bg-green-500/5"
-                        : "border-muted"
-                    }`}
-                  >
-                    <CardHeader className="pb-3">
-                      <div className="flex items-start justify-between">
-                        <div className="flex items-center space-x-2">
-                          <achievement.icon
-                            className={`w-5 h-5 ${
-                              achievement.completed
-                                ? "text-green-500"
-                                : "text-muted-foreground"
-                            }`}
-                          />
-                          <Badge
-                            variant={
-                              achievement.completed ? "default" : "secondary"
-                            }
-                            className="text-xs"
-                          >
-                            {achievement.category}
-                          </Badge>
-                        </div>
-                        {achievement.completed && (
-                          <Badge
-                            variant="outline"
-                            className="text-green-500 border-green-500"
-                          >
-                            Complete
-                          </Badge>
-                        )}
-                      </div>
-                      <div>
-                        <h3 className="font-semibold">{achievement.title}</h3>
-                        <p className="text-sm text-muted-foreground">
-                          {achievement.description}
-                        </p>
-                      </div>
-                    </CardHeader>
-                    <CardContent className="pt-0">
-                      <div className="space-y-2">
-                        <div className="flex justify-between text-sm">
-                          <span>Progress</span>
-                          <span>
-                            {isConnected ? `${Math.round(achievement.progress)}%` : "0%"}
-                          </span>
-                        </div>
-                        <Progress
-                          value={isConnected ? achievement.progress : 0}
-                          className="h-2"
-                        />
-                        <div className="flex justify-between items-center text-sm">
-                          <span className="text-muted-foreground">Reward:</span>
-                          <span className="font-medium text-blue-500">
-                            {achievement.reward}
-                          </span>
-                        </div>
-                      </div>
-                    </CardContent>
-                  </Card>
-                ))}
-              </div>
-            </CardContent>
-          </Card>
-
           {/* Contract Info */}
           <Card className="crypto-card p-3 border bg-gray-900/50">
             <h3 className="text-xs font-semibold mb-2">Contract Addresses (Sepolia Testnet)</h3>
@@ -640,6 +770,17 @@ export default function Dashboard() {
                   className="text-blue-400 hover:underline"
                 >
                   {STAKING_CONTRACT}
+                </a>
+              </div>
+              <div className="flex justify-between">
+                <span className="text-gray-400">Achievement Rewards:</span>
+                <a
+                  href={`https://sepolia.etherscan.io/address/${ACHIEVEMENT_CONTRACT}`}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="text-blue-400 hover:underline"
+                >
+                  {ACHIEVEMENT_CONTRACT}
                 </a>
               </div>
               <div className="flex justify-between">
