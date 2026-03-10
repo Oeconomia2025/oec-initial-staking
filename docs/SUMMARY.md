@@ -1,10 +1,10 @@
 # Table of contents
 
 * [Overview](README.md)
+* [Architecture & Scaffold](getting-started/architecture.md)
 
 ## Getting Started
 
-* [Architecture](getting-started/architecture.md)
 * [Quick Start](getting-started/quick-start.md)
 
 ## Smart Contracts

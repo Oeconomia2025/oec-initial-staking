@@ -1,4 +1,4 @@
-# Architecture
+# Architecture & Scaffold
 
 High-level overview of the OEC Staking dApp architecture and contract interactions.
 
