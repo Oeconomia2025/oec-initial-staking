@@ -2,6 +2,12 @@
 
 This is the OEC Initial Staking dapp, a decentralized application for staking OEC tokens and earning rewards.
 
+![Status](https://img.shields.io/badge/Status-Production%20Ready-brightgreen)
+![TypeScript](https://img.shields.io/badge/TypeScript-007ACC?logo=typescript&logoColor=white)
+![React](https://img.shields.io/badge/React-20232A?logo=react&logoColor=61DAFB)
+![Solidity](https://img.shields.io/badge/Solidity-363636?logo=solidity&logoColor=white)
+![Hardhat](https://img.shields.io/badge/Hardhat-FFF100?logo=hardhat&logoColor=black)
+
 ## Features
 
 - Multi-pool staking with different lock periods and APYs
