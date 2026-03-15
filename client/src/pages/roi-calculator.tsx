@@ -1,151 +1,298 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { Layout } from "@/components/layout";
 import { Card } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Slider } from "@/components/ui/slider";
+import { OECLoader } from "@/components/oec-loader";
 import {
   Calculator,
-  ChevronDown,
-  ChevronUp,
-  BarChart3,
-  Wallet
+  Wallet,
+  TrendingUp,
+  Coins,
+  DollarSign,
+  Percent,
 } from "lucide-react";
 import { WalletConnect } from "@/components/wallet-connect";
-import { OECLoader } from "@/components/oec-loader";
 import { useAccount, usePublicClient, useSwitchChain } from "wagmi";
 import { sepolia } from "wagmi/chains";
 import MultiPoolStakingAPRABI from "@/services/abis/MultiPoolStakingAPR.json";
+import {
+  BarChart,
+  Bar,
+  XAxis,
+  YAxis,
+  Tooltip as RechartsTooltip,
+  ResponsiveContainer,
+} from "recharts";
 
-const STAKING_CONTRACT = "0x4a4da37c9a9f421efe3feb527fc16802ce756ec3";
+const STAKING_CONTRACT = "0xd12664c1f09fa1561b5f952259d1eb5555af3265";
 
 interface Pool {
   id: number;
   name: string;
   lockPeriod: string;
   lockSeconds: number;
-  aprBps: number;
-  apr: number;
+  apr: number; // percentage (e.g. 35 = 35%)
 }
 
+// ---------- Helpers ----------
+function formatAxis(value: number): string {
+  if (value >= 1_000_000) return `${(value / 1_000_000).toFixed(1)}M`;
+  if (value >= 1_000) return `${(value / 1_000).toFixed(1)}k`;
+  return value.toFixed(0);
+}
+
+function formatNumber(num: number, decimals = 2): string {
+  return num.toLocaleString("en-US", {
+    minimumFractionDigits: decimals,
+    maximumFractionDigits: decimals,
+  });
+}
+
+// ---------- Synced slider+input component ----------
+// Uses local string state so the user can freely type/select-all/clear
+// without being fighting the clamped value. Clamping only happens on blur.
+function SliderInput({
+  label,
+  value,
+  min,
+  max,
+  step,
+  onChange,
+  prefix,
+  suffix,
+  decimals,
+}: {
+  label: string;
+  value: number;
+  min: number;
+  max: number;
+  step: number;
+  onChange: (v: number) => void;
+  prefix?: string;
+  suffix?: string;
+  decimals?: number;
+}) {
+  const dp = decimals ?? (step < 1 ? (String(step).split(".")[1]?.length ?? 2) : 0);
+  const [text, setText] = useState(dp > 0 ? value.toFixed(dp) : value.toString());
+  const [focused, setFocused] = useState(false);
+
+  // Sync text from external value changes (slider, buttons, reset) — but NOT while typing
+  useEffect(() => {
+    if (!focused) {
+      setText(dp > 0 ? value.toFixed(dp) : value.toString());
+    }
+  }, [value, dp, focused]);
+
+  const handleTextChange = (raw: string) => {
+    // Allow free typing — strip non-numeric chars except dot
+    const cleaned = raw.replace(/[^0-9.]/g, "");
+    setText(cleaned);
+
+    // Live-update the numeric value if it's a valid number within range
+    const parsed = parseFloat(cleaned);
+    if (!isNaN(parsed) && parsed >= min && parsed <= max) {
+      onChange(parsed);
+    }
+  };
+
+  const handleBlur = () => {
+    setFocused(false);
+    const parsed = parseFloat(text);
+    if (isNaN(parsed) || text === "") {
+      onChange(min);
+    } else {
+      onChange(Math.min(max, Math.max(min, parsed)));
+    }
+  };
+
+  return (
+    <div className="space-y-2">
+      <Label className="text-sm font-medium text-gray-300">{label}</Label>
+      <div className="flex items-center gap-3">
+        <Slider
+          value={[value]}
+          min={min}
+          max={max}
+          step={step}
+          onValueChange={([v]) => onChange(v)}
+          className="flex-1"
+        />
+        <div className="relative w-32 flex-shrink-0">
+          {prefix && (
+            <span className="absolute left-3 top-1/2 -translate-y-1/2 text-sm text-gray-400 pointer-events-none">
+              {prefix}
+            </span>
+          )}
+          <Input
+            type="text"
+            value={text}
+            onFocus={() => setFocused(true)}
+            onChange={(e) => handleTextChange(e.target.value)}
+            onBlur={handleBlur}
+            className={`bg-black border-white/20 text-right ${prefix ? "pl-7" : ""} ${suffix ? "pr-8" : ""}`}
+          />
+          {suffix && (
+            <span className="absolute right-3 top-1/2 -translate-y-1/2 text-sm text-gray-400 pointer-events-none">
+              {suffix}
+            </span>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ---------- Custom tooltip for the chart ----------
+function ChartTooltip({ active, payload, label }: any) {
+  if (!active || !payload?.length) return null;
+  const principal = payload.find((p: any) => p.dataKey === "principal")?.value ?? 0;
+  const rewards = payload.find((p: any) => p.dataKey === "rewards")?.value ?? 0;
+  return (
+    <div className="bg-card border border-border rounded-lg p-3 shadow-lg text-sm">
+      <p className="text-gray-400 mb-1">Month {label}</p>
+      <p className="text-purple-400">Staked: {formatNumber(principal)}</p>
+      <p className="text-emerald-400">Rewards: {formatNumber(rewards)}</p>
+      <p className="text-white font-medium">Total: {formatNumber(principal + rewards)}</p>
+    </div>
+  );
+}
+
+// ---------- Main component ----------
 export default function ROICalculator() {
   const { isConnected, chain } = useAccount();
   const publicClient = usePublicClient();
   const { switchChain } = useSwitchChain();
-
-  // Check if on correct network - must be defined AND be sepolia
   const isCorrectNetwork = Boolean(chain && chain.id === sepolia.id);
 
+  // Pool fetching
   const [loading, setLoading] = useState(true);
   const [pools, setPools] = useState<Pool[]>([]);
-  const [isROIExpanded, setIsROIExpanded] = useState(true);
-  const [calcAmount, setCalcAmount] = useState("1000");
-  const [calcDays, setCalcDays] = useState("365");
-  const [selectedPool, setSelectedPool] = useState<Pool | null>(null);
 
-  // Fetch pools from contract
   useEffect(() => {
     const fetchPools = async () => {
       if (!publicClient) {
         setLoading(false);
         return;
       }
-
       try {
-        const poolCount = await publicClient.readContract({
+        const poolCount = (await publicClient.readContract({
           address: STAKING_CONTRACT,
           abi: MultiPoolStakingAPRABI,
           functionName: "poolCount",
-        }) as bigint;
+        })) as bigint;
 
-        const fetchedPools: Pool[] = [];
-
+        const fetched: Pool[] = [];
         for (let i = 0; i < Number(poolCount); i++) {
-          const poolInfo = await publicClient.readContract({
+          const info = (await publicClient.readContract({
             address: STAKING_CONTRACT,
             abi: MultiPoolStakingAPRABI,
             functionName: "getPoolInfo",
             args: [BigInt(i)],
-          }) as [string, string, bigint, bigint, bigint, bigint, bigint];
+          })) as [string, string, bigint, bigint, bigint, bigint, bigint];
 
-          const lockSeconds = Number(poolInfo[3]);
-          const aprBps = Number(poolInfo[2]);
-
-          // Format lock period for display
+          const lockSeconds = Number(info[3]);
+          const aprBps = Number(info[2]);
           let lockPeriod = "Flexible";
-          let name = "Flexible Staking";
           if (lockSeconds > 0) {
             if (lockSeconds < 3600) {
               lockPeriod = `${lockSeconds}s`;
-              name = `${lockSeconds}-Second Lock`;
             } else if (lockSeconds < 86400) {
-              const hours = Math.floor(lockSeconds / 3600);
-              lockPeriod = `${hours} Hour${hours > 1 ? 's' : ''}`;
-              name = `${hours}-Hour Lock`;
+              lockPeriod = `${Math.floor(lockSeconds / 3600)}h`;
             } else {
-              const days = Math.floor(lockSeconds / 86400);
-              lockPeriod = `${days} Day${days > 1 ? 's' : ''}`;
-              name = `${days}-Day Lock`;
+              lockPeriod = `${Math.floor(lockSeconds / 86400)}d`;
             }
           }
 
-          fetchedPools.push({
+          fetched.push({
             id: i,
-            name,
+            name: lockPeriod,
             lockPeriod,
             lockSeconds,
-            aprBps,
             apr: aprBps / 100,
           });
         }
-
-        setPools(fetchedPools);
-        if (fetchedPools.length > 0) {
-          // Select the first non-test pool by default, or first pool
-          const defaultPool = fetchedPools.find(p => p.lockSeconds >= 86400) || fetchedPools[0];
-          setSelectedPool(defaultPool);
-        }
-      } catch (error) {
-        console.error("Error fetching pools:", error);
+        setPools(fetched);
+      } catch (err) {
+        console.error("Error fetching pools:", err);
       } finally {
         setLoading(false);
       }
     };
-
     fetchPools();
   }, [publicClient]);
 
-  const formatNumber = (num: number, decimals = 2) => {
-    return num.toLocaleString('en-US', {
-      minimumFractionDigits: decimals,
-      maximumFractionDigits: decimals,
-    });
-  };
+  // Calculator state
+  const [stake, setStake] = useState(1000);
+  const [apy, setApy] = useState(35);
+  const [price, setPrice] = useState(0.000259);
+  const [months, setMonths] = useState(12);
+  const [compound, setCompound] = useState(true);
 
-  const calculateROI = () => {
-    const principal = parseFloat(calcAmount) || 0;
-    const days = parseFloat(calcDays) || 0;
-    const apr = selectedPool ? selectedPool.apr / 100 : 0;
-    const years = days / 365;
+  // Auto-select first pool APR once loaded
+  useEffect(() => {
+    if (pools.length > 0) {
+      const defaultPool = pools.find((p) => p.apr > 0) || pools[0];
+      setApy(defaultPool.apr);
+    }
+  }, [pools]);
 
-    // Simple interest calculation (APR, not compound)
-    const totalRewards = principal * apr * years;
-    const totalValue = principal + totalRewards;
-    const roi = principal > 0 ? (totalRewards / principal) * 100 : 0;
-    const dailyRewards = days > 0 ? totalRewards / days : 0;
-    const monthlyRewards = days > 0 ? totalRewards / (days / 30) : 0;
+  // Calculations
+  const { finalBalance, rewards, usdValue, roiPercent, chartData } = useMemo(() => {
+    let finalBalance: number;
+    if (compound) {
+      finalBalance = stake * Math.pow(1 + apy / 12 / 100, months);
+    } else {
+      finalBalance = stake + stake * (apy / 100 / 12) * months;
+    }
+    const rewards = finalBalance - stake;
+    const usdValue = finalBalance * price;
+    const roiPercent = stake > 0 ? (rewards / stake) * 100 : 0;
 
-    return {
-      principal,
-      totalRewards,
-      totalValue,
-      roi,
-      dailyRewards,
-      monthlyRewards
-    };
-  };
+    const chartData = [];
+    for (let m = 0; m <= months; m++) {
+      let bal: number;
+      if (compound) {
+        bal = stake * Math.pow(1 + apy / 12 / 100, m);
+      } else {
+        bal = stake + stake * (apy / 100 / 12) * m;
+      }
+      chartData.push({
+        month: m,
+        principal: stake,
+        rewards: Math.max(0, bal - stake),
+      });
+    }
+    return { finalBalance, rewards, usdValue, roiPercent, chartData };
+  }, [stake, apy, price, months, compound]);
 
-  const roiData = calculateROI();
+  const stats = [
+    {
+      label: "Final Balance",
+      value: `${formatNumber(finalBalance)} OEC`,
+      icon: Coins,
+      color: "text-purple-400",
+    },
+    {
+      label: "Rewards Earned",
+      value: `+${formatNumber(rewards)} OEC`,
+      icon: TrendingUp,
+      color: "text-emerald-400",
+    },
+    {
+      label: "USD Value",
+      value: `$${formatNumber(usdValue)}`,
+      icon: DollarSign,
+      color: "text-crypto-gold",
+    },
+    {
+      label: "ROI",
+      value: `${formatNumber(roiPercent)}%`,
+      icon: Percent,
+      color: "text-crypto-blue",
+    },
+  ];
 
   if (loading) {
     return (
@@ -159,11 +306,10 @@ export default function ROICalculator() {
 
   return (
     <Layout>
-      <div className="container mx-auto px-4 sm:px-6 py-4 sm:py-5 space-y-2.5 sm:space-y-3 mt-3">
-
+      <div className="container mx-auto px-4 sm:px-6 py-4 sm:py-5 space-y-4 mt-3">
         {/* Wallet Connection Notice */}
         {!isConnected && (
-          <Card className="crypto-card p-3 border mb-3 bg-gradient-to-r from-yellow-500/10 to-orange-500/10 border-yellow-500/30">
+          <Card className="crypto-card p-3 border mb-1 bg-gradient-to-r from-yellow-500/10 to-orange-500/10 border-yellow-500/30">
             <div className="flex items-center justify-between">
               <div className="flex items-center space-x-2">
                 <Wallet className="w-4 h-4 text-yellow-400" />
@@ -181,7 +327,7 @@ export default function ROICalculator() {
 
         {/* Wrong Network Warning */}
         {isConnected && !isCorrectNetwork && (
-          <Card className="crypto-card p-3 border mb-3 bg-gradient-to-r from-red-500/10 to-orange-500/10 border-red-500/30">
+          <Card className="crypto-card p-3 border mb-1 bg-gradient-to-r from-red-500/10 to-orange-500/10 border-red-500/30">
             <div className="flex items-center justify-between">
               <div className="flex items-center space-x-2">
                 <Wallet className="w-4 h-4 text-red-400" />
@@ -200,170 +346,166 @@ export default function ROICalculator() {
           </Card>
         )}
 
-        {/* ROI Calculator Section */}
-        <Card className={`crypto-card p-6 border mb-8 bg-gradient-to-r from-blue-500/10 to-purple-500/10 border-blue-500/30 ${!isROIExpanded ? 'pb-4' : ''}`}>
-          <div
-            className={`flex items-center justify-between cursor-pointer hover:bg-white/5 rounded-lg p-2 -m-2 transition-all duration-200 ${isROIExpanded ? 'mb-6' : 'mb-0'}`}
-            onClick={() => setIsROIExpanded(!isROIExpanded)}
-          >
-            <div className="flex items-center space-x-2">
-              <Calculator className="w-6 h-6 text-crypto-blue" />
-              <h2 className="text-xl font-semibold">Interactive ROI Calculator</h2>
-            </div>
-            <Button
-              variant="outline"
-              size="sm"
-              className="p-2 h-auto border-white/20 bg-white/5 hover:bg-white/10 hover:border-white/40 transition-all duration-200"
-            >
-              {isROIExpanded ? (
-                <ChevronUp className="w-6 h-6 text-white" />
-              ) : (
-                <ChevronDown className="w-6 h-6 text-white" />
-              )}
-            </Button>
+        {/* Main Calculator Card */}
+        <Card className="crypto-card p-6 border bg-gradient-to-r from-blue-500/10 to-purple-500/10 border-blue-500/30">
+          {/* Header */}
+          <div className="flex items-center space-x-2 mb-6">
+            <Calculator className="w-6 h-6 text-crypto-blue" />
+            <h2 className="text-xl font-semibold">OEC Rewards Calculator</h2>
           </div>
 
-          {isROIExpanded && (
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-              {/* Calculator Controls */}
-              <div className="space-y-6">
-                <div>
-                  <Label htmlFor="calc-amount" className="text-sm font-medium mb-2 block">
-                    Stake Amount (OEC)
-                  </Label>
-                  <Input
-                    id="calc-amount"
-                    type="number"
-                    value={calcAmount}
-                    onChange={(e) => setCalcAmount(e.target.value)}
-                    placeholder="Enter amount to stake"
-                    className="bg-black border-white/20"
-                  />
-                </div>
+          {/* Two-column layout */}
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+            {/* Left: Inputs */}
+            <div className="space-y-5">
+              <SliderInput
+                label="Stake Amount (OEC)"
+                value={stake}
+                min={5_000}
+                max={5_000_000}
+                step={100}
+                onChange={setStake}
+              />
 
-                <div>
-                  <Label htmlFor="calc-days" className="text-sm font-medium mb-2 block">
-                    Staking Period (Days)
-                  </Label>
-                  <Input
-                    id="calc-days"
-                    type="number"
-                    value={calcDays}
-                    onChange={(e) => setCalcDays(e.target.value)}
-                    placeholder="Enter staking period"
-                    className="bg-black border-white/20"
-                  />
-                  <div className="flex gap-2 mt-2">
-                    {[30, 60, 90, 365].map((days) => (
-                      <Button
-                        key={days}
-                        variant="outline"
-                        size="sm"
-                        onClick={() => setCalcDays(days.toString())}
-                        className={`text-xs border-white/20 hover:bg-white/10 ${
-                          calcDays === days.toString() ? 'bg-white/20' : 'bg-black'
-                        }`}
-                      >
-                        {days === 365 ? '1y' : `${days}d`}
-                      </Button>
-                    ))}
-                  </div>
-                </div>
-
-                <div>
-                  <Label className="text-sm font-medium mb-2 block">
-                    Select Pool
-                  </Label>
-                  <div className="grid grid-cols-2 gap-2">
-                    {pools.map((pool) => (
-                      <Button
-                        key={pool.id}
-                        variant={selectedPool?.id === pool.id ? "default" : "outline"}
-                        size="sm"
-                        onClick={() => setSelectedPool(pool)}
-                        className={`text-xs h-auto py-2 ${
-                          selectedPool?.id === pool.id
-                            ? 'bg-crypto-blue hover:bg-crypto-blue/80'
-                            : 'bg-black border-white/20 hover:bg-white/10'
-                        }`}
-                      >
-                        <div className="flex flex-col items-center">
-                          <span className="font-bold">{pool.apr}% APR</span>
-                          <span className="text-xs opacity-75">{pool.lockPeriod}</span>
-                        </div>
-                      </Button>
-                    ))}
-                  </div>
-                  <p className="text-xs text-gray-500 mt-2">
-                    * APR = Annual Percentage Rate (simple interest, not compounded)
-                  </p>
+              {/* APY — pool buttons instead of slider */}
+              <div className="space-y-2">
+                <Label className="text-sm font-medium text-gray-300">APR (from staking pools)</Label>
+                <div className="grid grid-cols-4 gap-2">
+                  {pools.map((pool) => (
+                    <button
+                      key={pool.id}
+                      onClick={() => setApy(pool.apr)}
+                      className={`py-2 px-3 rounded-md text-sm font-medium transition-colors ${
+                        apy === pool.apr
+                          ? "bg-primary text-primary-foreground shadow-sm"
+                          : "bg-black border border-white/20 text-gray-400 hover:text-white hover:bg-white/5"
+                      }`}
+                    >
+                      <span className="font-bold">{pool.apr}%</span>
+                    </button>
+                  ))}
                 </div>
               </div>
 
-              {/* ROI Results */}
-              <div className="space-y-4">
-                <div className="bg-black p-4 rounded-lg border border-white/10">
-                  <h3 className="text-lg font-semibold mb-4 flex items-center">
-                    <BarChart3 className="w-5 h-5 mr-2 text-crypto-green" />
-                    ROI Breakdown
-                  </h3>
-
-                  <div className="space-y-3">
-                    <div className="flex justify-between items-center">
-                      <span className="text-gray-300">Initial Stake:</span>
-                      <span className="font-medium">{formatNumber(roiData.principal)} OEC</span>
-                    </div>
-                    <div className="flex justify-between items-center">
-                      <span className="text-gray-300">Total Rewards:</span>
-                      <span className="font-medium text-green-400">+{formatNumber(roiData.totalRewards)} OEC</span>
-                    </div>
-                    <div className="flex justify-between items-center">
-                      <span className="text-gray-300">Final Value:</span>
-                      <span className="font-bold text-white">{formatNumber(roiData.totalValue)} OEC</span>
-                    </div>
-                    <div className="flex justify-between items-center border-t border-white/10 pt-2">
-                      <span className="text-gray-300">ROI:</span>
-                      <span className="font-bold text-crypto-blue">{formatNumber(roiData.roi)}%</span>
-                    </div>
-                  </div>
-                </div>
-
-                <div className="bg-black p-4 rounded-lg border border-white/10">
-                  <h3 className="text-lg font-semibold mb-4">Earning Breakdown</h3>
-
-                  <div className="space-y-3">
-                    <div className="flex justify-between items-center">
-                      <span className="text-gray-300">Daily Rewards:</span>
-                      <span className="font-medium text-green-400">{formatNumber(roiData.dailyRewards, 4)} OEC</span>
-                    </div>
-                    <div className="flex justify-between items-center">
-                      <span className="text-gray-300">Monthly Rewards:</span>
-                      <span className="font-medium text-green-400">{formatNumber(roiData.monthlyRewards)} OEC</span>
-                    </div>
-                    <div className="flex justify-between items-center">
-                      <span className="text-gray-300">Selected Pool:</span>
-                      <span className="font-medium">{selectedPool?.name} ({selectedPool?.apr}% APR)</span>
-                    </div>
-                    {selectedPool && selectedPool.lockSeconds > 0 && (
-                      <div className="flex justify-between items-center">
-                        <span className="text-gray-300">Lock Period:</span>
-                        <span className="font-medium text-yellow-400">{selectedPool.lockPeriod}</span>
-                      </div>
-                    )}
-                  </div>
-                </div>
-
-                {selectedPool && parseInt(calcDays) < Math.ceil(selectedPool.lockSeconds / 86400) && selectedPool.lockSeconds >= 86400 && (
-                  <div className="bg-yellow-500/10 border border-yellow-500/30 p-3 rounded-lg">
-                    <p className="text-xs text-yellow-400">
-                      <strong>Note:</strong> Your selected staking period ({calcDays} days) is less than the pool's lock period ({selectedPool.lockPeriod}).
-                      Early withdrawal may incur penalties.
+              <SliderInput
+                label="Token Price (USD)"
+                value={price}
+                min={0.0001}
+                max={0.1}
+                step={0.0001}
+                onChange={setPrice}
+                prefix="$"
+                decimals={4}
+              />
+              <div>
+                <SliderInput
+                  label="Duration (months)"
+                  value={months}
+                  min={1}
+                  max={36}
+                  step={1}
+                  onChange={setMonths}
+                />
+                {(() => {
+                  const selectedPool = pools.find((p) => p.apr === apy);
+                  const show = selectedPool && selectedPool.lockSeconds > 0 &&
+                    months < Math.ceil(selectedPool.lockSeconds / (30 * 86400));
+                  const lockMonths = selectedPool ? Math.ceil(selectedPool.lockSeconds / (30 * 86400)) : 0;
+                  return (
+                    <p className={`text-xs mt-1.5 h-4 ${show ? "text-yellow-400" : "text-transparent"}`}>
+                      {show
+                        ? `The ${selectedPool!.apr}% APR pool requires a ${selectedPool!.lockPeriod} lock (~${lockMonths} month${lockMonths > 1 ? "s" : ""}). You've selected ${months} month${months > 1 ? "s" : ""}.`
+                        : "\u00A0"}
                     </p>
-                  </div>
-                )}
+                  );
+                })()}
+              </div>
+
+              {/* Compounding toggle */}
+              <div className="space-y-2">
+                <Label className="text-sm font-medium text-gray-300">Compounding Mode</Label>
+                <div className="flex rounded-md overflow-hidden border border-white/20">
+                  <button
+                    onClick={() => setCompound(true)}
+                    className={`flex-1 py-2 text-sm font-medium transition-colors ${
+                      compound
+                        ? "bg-primary text-primary-foreground"
+                        : "bg-black text-gray-400 hover:text-white hover:bg-white/5"
+                    }`}
+                  >
+                    Auto-compound
+                  </button>
+                  <button
+                    onClick={() => setCompound(false)}
+                    className={`flex-1 py-2 text-sm font-medium transition-colors ${
+                      !compound
+                        ? "bg-primary text-primary-foreground"
+                        : "bg-black text-gray-400 hover:text-white hover:bg-white/5"
+                    }`}
+                  >
+                    Manual claim
+                  </button>
+                </div>
               </div>
             </div>
-          )}
+
+            {/* Right: Chart */}
+            <div className="flex flex-col">
+              <div className="bg-black rounded-lg border border-white/10 p-4 flex flex-col flex-1">
+                <div className="flex items-center gap-4 mb-4">
+                  <div className="flex items-center gap-1.5">
+                    <span className="w-3 h-3 rounded-sm bg-purple-500 inline-block" />
+                    <span className="text-xs text-gray-400">Staked principal</span>
+                  </div>
+                  <div className="flex items-center gap-1.5">
+                    <span className="w-3 h-3 rounded-sm bg-emerald-500 inline-block" />
+                    <span className="text-xs text-gray-400">Rewards earned</span>
+                  </div>
+                </div>
+                <ResponsiveContainer width="100%" className="flex-1" style={{ minHeight: 280 }}>
+                  <BarChart data={chartData} margin={{ top: 5, right: 5, bottom: 5, left: 5 }}>
+                    <XAxis
+                      dataKey="month"
+                      tick={{ fill: "#9ca3af", fontSize: 12 }}
+                      axisLine={{ stroke: "#374151" }}
+                      tickLine={false}
+                    />
+                    <YAxis
+                      tickFormatter={formatAxis}
+                      tick={{ fill: "#9ca3af", fontSize: 12 }}
+                      axisLine={false}
+                      tickLine={false}
+                      width={50}
+                    />
+                    <RechartsTooltip content={<ChartTooltip />} cursor={{ fill: "rgba(255,255,255,0.05)" }} />
+                    <Bar dataKey="principal" stackId="a" fill="#a855f7" radius={[0, 0, 0, 0]} />
+                    <Bar dataKey="rewards" stackId="a" fill="#10b981" radius={[4, 4, 0, 0]} />
+                  </BarChart>
+                </ResponsiveContainer>
+              </div>
+            </div>
+          </div>
+
+          {/* Stat Summary Cards */}
+          <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 mt-6">
+            {stats.map((s) => (
+              <div
+                key={s.label}
+                className="bg-muted rounded-lg p-4 border border-border"
+              >
+                <div className="flex items-center gap-2 mb-1">
+                  <s.icon className={`w-4 h-4 ${s.color}`} />
+                  <span className="text-xs text-muted-foreground">{s.label}</span>
+                </div>
+                <p className={`text-lg font-semibold ${s.color}`}>{s.value}</p>
+              </div>
+            ))}
+          </div>
+
+          {/* Disclaimer */}
+          <p className="text-xs text-muted-foreground mt-4">
+            Estimates only. APY is variable and depends on total staked supply, emissions schedule, and protocol conditions.
+          </p>
         </Card>
       </div>
     </Layout>

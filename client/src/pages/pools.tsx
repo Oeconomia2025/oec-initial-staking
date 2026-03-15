@@ -17,13 +17,13 @@ import { EarlyWithdrawModal } from "@/components/early-withdraw-modal";
 import { useToast } from "@/hooks/use-toast";
 import { useAccount, usePublicClient, useWalletClient, useSwitchChain } from "wagmi";
 import { sepolia } from "wagmi/chains";
-import { parseEther, formatEther, parseAbiItem } from "viem";
+import { parseEther, formatEther } from "viem";
 import MultiPoolStakingAPRABI from "@/services/abis/MultiPoolStakingAPR.json";
 import ERC20ABI from "@/services/abis/ERC20.json";
 
 // Contract addresses on Sepolia
-const STAKING_CONTRACT = "0x4a4da37c9a9f421efe3feb527fc16802ce756ec3";
-const OEC_TOKEN = "0x2b2fb8df4ac5d394f0d5674d7a54802e42a06aba";
+const STAKING_CONTRACT = "0xd12664c1f09fa1561b5f952259d1eb5555af3265";
+const OEC_TOKEN = "0x00904218319a045a96d776ec6a970f54741208e6";
 
 interface PoolData {
   id: number;
@@ -183,28 +183,24 @@ export default function Pools() {
         }
         setEarlyPenaltyBps(penaltyBpsData);
 
-        // Fetch deposit timestamps from Staked events
+        // V2: Fetch deposit timestamps from on-chain view function
         if (address) {
           try {
-            const logs = await publicClient.getLogs({
-              address: STAKING_CONTRACT,
-              event: parseAbiItem('event Staked(uint256 indexed poolId, address indexed user, uint256 creditedAmount)'),
-              args: { user: address },
-              fromBlock: 0n,
-              toBlock: 'latest'
-            });
-
-            // Get the most recent stake timestamp for each pool
             const timestamps: { [poolId: number]: bigint } = {};
-            for (const log of logs) {
-              const poolId = Number(log.args.poolId);
-              // Get the block to retrieve timestamp
-              const block = await publicClient.getBlock({ blockNumber: log.blockNumber });
-              timestamps[poolId] = block.timestamp;
+            for (let i = 0; i < Number(count); i++) {
+              const ts = await publicClient.readContract({
+                address: STAKING_CONTRACT,
+                abi: MultiPoolStakingAPRABI,
+                functionName: "getDepositTimestamp",
+                args: [BigInt(i), address],
+              }) as bigint;
+              if (ts > 0n) {
+                timestamps[i] = ts;
+              }
             }
             setDepositTimestamps(timestamps);
           } catch (error) {
-            console.error("Error fetching stake events:", error);
+            console.error("Error fetching deposit timestamps:", error);
           }
         }
       } catch (error) {
@@ -312,26 +308,6 @@ export default function Pools() {
       setTxStep("Step 2 of 2: Staking...");
       const amount = parseEther(stakeAmount[poolId]);
 
-      // Auto-claim pending rewards before staking
-      const pool = pools.find(p => p.id === poolId);
-      if (pool && pool.userEarned > 0n) {
-        try {
-          setTxStep("Claiming rewards before staking...");
-          toast({ title: "Claiming pending rewards first...", description: "Please confirm in your wallet" });
-          const claimHash = await walletClient.writeContract({
-            address: STAKING_CONTRACT,
-            abi: MultiPoolStakingAPRABI,
-            functionName: "getReward",
-            args: [BigInt(poolId)],
-          });
-          await publicClient?.waitForTransactionReceipt({ hash: claimHash });
-          toast({ title: "Rewards claimed!", description: `Claimed ${formatNumber(pool.userEarned)} OEC` });
-        } catch (claimError) {
-          console.warn("Auto-claim failed, proceeding with stake:", claimError);
-        }
-        setTxStep("Step 2 of 2: Staking...");
-      }
-
       toast({ title: "Staking OEC...", description: "Please confirm in your wallet" });
 
       const hash = await walletClient.writeContract({
@@ -375,25 +351,8 @@ export default function Pools() {
       setTxPending(true);
       const amount = parseEther(stakeAmount[poolId]);
 
-      // Auto-claim pending rewards before unstaking
-      const pool = pools.find(p => p.id === poolId);
-      if (pool && pool.userEarned > 0n) {
-        try {
-          toast({ title: "Claiming pending rewards first...", description: "Please confirm in your wallet" });
-          const claimHash = await walletClient.writeContract({
-            address: STAKING_CONTRACT,
-            abi: MultiPoolStakingAPRABI,
-            functionName: "getReward",
-            args: [BigInt(poolId)],
-          });
-          await publicClient?.waitForTransactionReceipt({ hash: claimHash });
-          toast({ title: "Rewards claimed!", description: `Claimed ${formatNumber(pool.userEarned)} OEC` });
-        } catch (claimError) {
-          console.warn("Auto-claim failed, proceeding with unstake:", claimError);
-        }
-      }
-
-      toast({ title: "Withdrawing...", description: "Please confirm in your wallet" });
+      // V2: withdraw() auto-claims rewards — one tx, one confirmation
+      toast({ title: "Withdrawing + claiming rewards...", description: "Please confirm in your wallet" });
 
       const hash = await walletClient.writeContract({
         address: STAKING_CONTRACT,
@@ -406,7 +365,7 @@ export default function Pools() {
 
       try {
         await publicClient?.waitForTransactionReceipt({ hash });
-        toast({ title: "Successfully withdrew!", description: `${stakeAmount[poolId]} OEC has been withdrawn` });
+        toast({ title: "Successfully withdrew!", description: `${stakeAmount[poolId]} OEC withdrawn + rewards claimed` });
       } catch (receiptError) {
         console.warn("Receipt wait failed, tx may still succeed:", receiptError);
         toast({ title: "Transaction sent", description: "Check your wallet for confirmation status" });
@@ -448,23 +407,6 @@ export default function Pools() {
       setTxPending(true);
       setEarlyWithdrawModal(prev => ({ ...prev, isOpen: false }));
 
-      // Auto-claim pending rewards before early withdrawal
-      if (pool.userEarned > 0n) {
-        try {
-          toast({ title: "Claiming pending rewards first...", description: "Please confirm in your wallet" });
-          const claimHash = await walletClient.writeContract({
-            address: STAKING_CONTRACT,
-            abi: MultiPoolStakingAPRABI,
-            functionName: "getReward",
-            args: [BigInt(earlyWithdrawModal.poolId!)],
-          });
-          await publicClient?.waitForTransactionReceipt({ hash: claimHash });
-          toast({ title: "Rewards claimed!", description: `Claimed ${formatNumber(pool.userEarned)} OEC` });
-        } catch (claimError) {
-          console.warn("Auto-claim failed, proceeding with early withdraw:", claimError);
-        }
-      }
-
       toast({ title: "Processing early withdrawal...", description: "Please confirm in your wallet" });
 
       const hash = await walletClient.writeContract({
@@ -505,6 +447,7 @@ export default function Pools() {
 
   const totalPendingRewards = pools.reduce((sum, p) => sum + p.userEarned, 0n);
 
+  // V2: Single contract call claims all pools at once
   const handleClaimAllRewards = async () => {
     if (!walletClient || !address) return;
 
@@ -513,32 +456,29 @@ export default function Pools() {
 
     try {
       setTxPending(true);
-
-      for (let i = 0; i < claimable.length; i++) {
-        const pool = claimable[i];
-        toast({
-          title: `Claiming rewards (${i + 1}/${claimable.length})...`,
-          description: `${pool.name} — please confirm in your wallet`,
-        });
-
-        const hash = await walletClient.writeContract({
-          address: STAKING_CONTRACT,
-          abi: MultiPoolStakingAPRABI,
-          functionName: "getReward",
-          args: [BigInt(pool.id)],
-        });
-
-        try {
-          await publicClient?.waitForTransactionReceipt({ hash });
-        } catch (receiptError) {
-          console.warn(`Receipt wait failed for pool ${pool.id}, continuing...`, receiptError);
-        }
-      }
-
       toast({
-        title: "All rewards claimed!",
-        description: `Claimed ${formatNumber(totalPendingRewards)} OEC from ${claimable.length} pool${claimable.length > 1 ? "s" : ""}`,
+        title: "Claiming all rewards...",
+        description: "Please confirm in your wallet — one transaction for all pools",
       });
+
+      const hash = await walletClient.writeContract({
+        address: STAKING_CONTRACT,
+        abi: MultiPoolStakingAPRABI,
+        functionName: "claimAllRewards",
+      });
+
+      toast({ title: "Transaction submitted", description: "Waiting for confirmation..." });
+
+      try {
+        await publicClient?.waitForTransactionReceipt({ hash });
+        toast({
+          title: "All rewards claimed!",
+          description: `Claimed ${formatNumber(totalPendingRewards)} OEC from ${claimable.length} pool${claimable.length > 1 ? "s" : ""}`,
+        });
+      } catch (receiptError) {
+        console.warn("Receipt wait failed, tx may still succeed:", receiptError);
+        toast({ title: "Transaction sent", description: "Check your wallet for confirmation status" });
+      }
 
       window.location.reload();
     } catch (error: any) {
@@ -547,6 +487,48 @@ export default function Pools() {
         toast({ title: "Transaction cancelled", description: "You rejected the transaction", variant: "destructive" });
       } else {
         toast({ title: "Claim failed", description: "Transaction was rejected or failed", variant: "destructive" });
+      }
+    } finally {
+      setTxPending(false);
+    }
+  };
+
+  const handleRestakeRewards = async (poolId: number) => {
+    if (!walletClient || !address) return;
+
+    const pool = pools.find(p => p.id === poolId);
+
+    try {
+      setTxPending(true);
+      toast({ title: "Claiming & restaking rewards...", description: "Please confirm in your wallet" });
+
+      const hash = await walletClient.writeContract({
+        address: STAKING_CONTRACT,
+        abi: MultiPoolStakingAPRABI,
+        functionName: "restakeRewards",
+        args: [BigInt(poolId)],
+      });
+
+      toast({ title: "Transaction submitted", description: "Waiting for confirmation..." });
+
+      try {
+        await publicClient?.waitForTransactionReceipt({ hash });
+        toast({
+          title: "Rewards restaked!",
+          description: `${pool ? formatNumber(pool.userEarned) : ''} OEC compounded back into pool`
+        });
+      } catch (receiptError) {
+        console.warn("Receipt wait failed, tx may still succeed:", receiptError);
+        toast({ title: "Transaction sent", description: "Check your wallet for confirmation status" });
+      }
+
+      window.location.reload();
+    } catch (error: any) {
+      console.error("Restake failed:", error);
+      if (error?.message?.includes("User rejected") || error?.message?.includes("denied")) {
+        toast({ title: "Transaction cancelled", description: "You rejected the transaction", variant: "destructive" });
+      } else {
+        toast({ title: "Restake failed", description: "Transaction was rejected or failed", variant: "destructive" });
       }
     } finally {
       setTxPending(false);
@@ -929,14 +911,24 @@ export default function Pools() {
                             <div className="text-xs sm:text-sm text-gray-400">OEC</div>
                             <div className="text-[0.6rem] sm:text-xs text-gray-500">Available Rewards</div>
 
-                            <Button
-                              className="w-full bg-green-600 hover:bg-green-900 text-white py-1.5 text-xs sm:text-sm font-semibold"
-                              onClick={() => handleClaimRewards(pool.id)}
-                              disabled={txPending || !isConnected || pool.userEarned === 0n}
-                            >
-                              {txPending ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : null}
-                              Claim Rewards
-                            </Button>
+                            <div className="flex gap-2">
+                              <Button
+                                className="flex-1 bg-green-600 hover:bg-green-900 text-white py-1.5 text-xs sm:text-sm font-semibold"
+                                onClick={() => handleClaimRewards(pool.id)}
+                                disabled={txPending || !isConnected || pool.userEarned === 0n}
+                              >
+                                {txPending ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : null}
+                                Claim
+                              </Button>
+                              <Button
+                                className="flex-1 bg-purple-600 hover:bg-purple-900 text-white py-1.5 text-xs sm:text-sm font-semibold"
+                                onClick={() => handleRestakeRewards(pool.id)}
+                                disabled={txPending || !isConnected || pool.userEarned === 0n}
+                              >
+                                {txPending ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : null}
+                                Claim & Restake
+                              </Button>
+                            </div>
                           </div>
                         </div>
 
