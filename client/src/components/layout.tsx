@@ -15,11 +15,7 @@ import { formatEther, formatUnits } from "viem";
 import ERC20ABI from "@/services/abis/ERC20.json";
 import MultiPoolStakingAPRABI from "@/services/abis/MultiPoolStakingAPR.json";
 
-// Contract addresses on Sepolia
-const OEC_TOKEN = "0x2b2fb8df4ac5d394f0d5674d7a54802e42a06aba";
-const STAKING_CONTRACT = "0x4a4da37c9a9f421efe3feb527fc16802ce756ec3";
-const ELOQURA_FACTORY = "0x1a4C7849Dd8f62AefA082360b3A8D857952B3b8e";
-const USDC_TOKEN = "0x1c7D4B196Cb0C7B01d743Fbc6116a902379C7238";
+import { CONTRACTS, IS_TESTNET } from "@/lib/contracts";
 
 // Minimal ABIs for Eloqura DEX price fetch
 const FACTORY_ABI = [
@@ -147,6 +143,7 @@ export function Layout({
   const [tokenStats, setTokenStats] = useState({
     totalSupply: 0n,
     tvl: 0n,
+    rewardsLocked: 0n,
   });
   const [stakingActivity, setStakingActivity] = useState({ stakers: 0, stakes: 0 });
 
@@ -216,20 +213,41 @@ export function Layout({
       try {
         // Fetch total supply
         const totalSupply = await publicClient.readContract({
-          address: OEC_TOKEN,
+          address: CONTRACTS.OEC_TOKEN,
           abi: ERC20ABI,
           functionName: "totalSupply",
         }) as bigint;
 
-        // Fetch TVL (tokens held by staking contract)
-        const tvl = await publicClient.readContract({
-          address: OEC_TOKEN,
-          abi: ERC20ABI,
-          functionName: "balanceOf",
-          args: [STAKING_CONTRACT],
-        }) as bigint;
+        // Fetch contract's raw OEC balance and pool totalSupply to separate staked vs rewards
+        const [contractBalance, poolCount] = await Promise.all([
+          publicClient.readContract({
+            address: CONTRACTS.OEC_TOKEN,
+            abi: ERC20ABI,
+            functionName: "balanceOf",
+            args: [CONTRACTS.STAKING],
+          }) as Promise<bigint>,
+          publicClient.readContract({
+            address: CONTRACTS.STAKING,
+            abi: MultiPoolStakingAPRABI,
+            functionName: "poolCount",
+          }) as Promise<bigint>,
+        ]);
 
-        setTokenStats({ totalSupply, tvl });
+        let tvl = 0n;
+        for (let i = 0; i < Number(poolCount); i++) {
+          const poolInfo = await publicClient.readContract({
+            address: CONTRACTS.STAKING,
+            abi: MultiPoolStakingAPRABI,
+            functionName: "getPoolInfo",
+            args: [BigInt(i)],
+          }) as [string, string, bigint, bigint, bigint, bigint, bigint];
+          tvl += poolInfo[4]; // totalSupply is index 4
+        }
+
+        // Rewards locked = contract balance minus what users have staked
+        const rewardsLocked = contractBalance > tvl ? contractBalance - tvl : 0n;
+
+        setTokenStats({ totalSupply, tvl, rewardsLocked });
       } catch (error) {
         console.error("Error fetching token stats:", error);
       }
@@ -240,47 +258,33 @@ export function Layout({
     return () => clearInterval(interval);
   }, [publicClient]);
 
-  // Fetch staker & stake counts from Staked event logs
+  // V2: Fetch staker & stake counts from on-chain counters (replaces event log scanning)
   useEffect(() => {
     const fetchStakingActivity = async () => {
       if (!publicClient) return;
 
       try {
-        // Get current block and scan last 500,000 blocks (~70 days on Sepolia)
-        const currentBlock = await publicClient.getBlockNumber();
-        const fromBlock = currentBlock > 500_000n ? currentBlock - 500_000n : 0n;
+        const [stakers, stakes] = await Promise.all([
+          publicClient.readContract({
+            address: CONTRACTS.STAKING,
+            abi: MultiPoolStakingAPRABI,
+            functionName: "globalActiveStakerCount",
+          }) as Promise<bigint>,
+          publicClient.readContract({
+            address: CONTRACTS.STAKING,
+            abi: MultiPoolStakingAPRABI,
+            functionName: "globalActiveStakeCount",
+          }) as Promise<bigint>,
+        ]);
 
-        // Chunk into 5,000-block segments to avoid RPC limits
-        const CHUNK = 5_000n;
-        const allLogs: any[] = [];
-        for (let start = fromBlock; start <= currentBlock; start += CHUNK) {
-          const end = start + CHUNK - 1n > currentBlock ? currentBlock : start + CHUNK - 1n;
-          const chunk = await publicClient.getLogs({
-            address: STAKING_CONTRACT,
-            event: {
-              type: "event",
-              name: "Staked",
-              inputs: [
-                { name: "poolId", type: "uint256", indexed: true },
-                { name: "user", type: "address", indexed: true },
-                { name: "creditedAmount", type: "uint256", indexed: false },
-              ],
-            },
-            fromBlock: start,
-            toBlock: end,
-          });
-          allLogs.push(...chunk);
-        }
-
-        const uniqueStakers = new Set(allLogs.map((log) => log.args.user));
-        setStakingActivity({ stakers: uniqueStakers.size, stakes: allLogs.length });
+        setStakingActivity({ stakers: Number(stakers), stakes: Number(stakes) });
       } catch (error) {
         console.error("Error fetching staking activity:", error);
       }
     };
 
     fetchStakingActivity();
-    const interval = setInterval(fetchStakingActivity, 120000);
+    const interval = setInterval(fetchStakingActivity, 60000);
     return () => clearInterval(interval);
   }, [publicClient]);
 
@@ -291,10 +295,10 @@ export function Layout({
 
       try {
         const pairAddress = await publicClient.readContract({
-          address: ELOQURA_FACTORY as `0x${string}`,
+          address: CONTRACTS.ELOQURA_FACTORY as `0x${string}`,
           abi: FACTORY_ABI,
           functionName: "getPair",
-          args: [OEC_TOKEN as `0x${string}`, USDC_TOKEN as `0x${string}`],
+          args: [CONTRACTS.OEC_TOKEN as `0x${string}`, CONTRACTS.USDC as `0x${string}`],
         }) as `0x${string}`;
 
         if (!pairAddress || pairAddress === "0x0000000000000000000000000000000000000000") return;
@@ -304,7 +308,7 @@ export function Layout({
           publicClient.readContract({ address: pairAddress, abi: PAIR_ABI, functionName: "token0" }) as Promise<`0x${string}`>,
         ]);
 
-        const isOecToken0 = token0.toLowerCase() === OEC_TOKEN.toLowerCase();
+        const isOecToken0 = token0.toLowerCase() === CONTRACTS.OEC_TOKEN.toLowerCase();
         // OEC is 18 decimals, USDC is 6 decimals
         const oecReserve = parseFloat(formatUnits(isOecToken0 ? reserves[0] : reserves[1], 18));
         const usdcReserve = parseFloat(formatUnits(isOecToken0 ? reserves[1] : reserves[0], 6));
@@ -353,7 +357,7 @@ export function Layout({
 
       try {
         const owner = await publicClient.readContract({
-          address: STAKING_CONTRACT,
+          address: CONTRACTS.STAKING,
           abi: MultiPoolStakingAPRABI,
           functionName: "owner",
         }) as string;
@@ -398,8 +402,9 @@ export function Layout({
     });
   };
 
-  // Calculate TVL in dollars
+  // Calculate TVL and rewards locked in dollars
   const tvlInDollars = Number(formatEther(tokenStats.tvl)) * tokenPrice;
+  const rewardsLockedInDollars = Number(formatEther(tokenStats.rewardsLocked)) * tokenPrice;
 
   const handleNavigation = (path: string) => {
     const wasCollapsed = sidebarCollapsed;
@@ -434,7 +439,7 @@ export function Layout({
     { icon: LayoutDashboard, label: "Dashboard", path: "/", active: location === "/" || location === "/dashboard" },
     { icon: Lock, label: "Staking Pools", path: "/pools", active: location === "/pools" },
     { icon: Calculator, label: "ROI Calc", path: "/calculator", active: location === "/calculator" },
-    { icon: Droplets, label: "Faucet", path: "/faucet", active: location === "/faucet" },
+    ...(IS_TESTNET ? [{ icon: Droplets, label: "Faucet", path: "/faucet", active: location === "/faucet" }] : []),
     ...(address && isOwner ? [{ icon: Shield, label: "Admin", path: "/admin", active: location === "/admin" }] : []),
   ];
 
@@ -468,8 +473,10 @@ export function Layout({
                 <img src="/oec-logo.png" alt="Oeconomia Logo" className="w-full h-full object-cover" />
               </div>
               {!sidebarCollapsed && (
-                <div>
-                  <h2 className="text-lg font-bold">Oeconomia</h2>
+                <div className="leading-none">
+                  <h2 className="text-lg font-bold whitespace-nowrap">Oeconomia</h2>
+                  <div className="border-b border-white mt-[2px] mb-[2px]" />
+                  <p className="text-[9px] font-semibold text-white uppercase flex justify-between">{'STAKING'.split('').map((c, i) => <span key={i}>{c}</span>)}</p>
                 </div>
               )}
             </div>
@@ -542,7 +549,7 @@ export function Layout({
                 className={`mb-2 ${sidebarCollapsed ? "w-[calc(4rem-1rem)]" : "w-[calc(12rem-1rem)]"}`}
               >
                 <DropdownMenuItem
-                  onClick={() => window.open("https://oeconomia.tech/", "_blank")}
+                  onClick={() => window.open("https://oeconomia.io/", "_blank")}
                   className={`cursor-pointer hover:bg-gradient-to-r hover:from-cyan-500/20 hover:to-purple-600/20 transition-all duration-200 ${
                     sidebarCollapsed ? "justify-center px-2" : "px-3"
                   }`}
@@ -641,66 +648,30 @@ export function Layout({
         <div className="flex-1 lg:ml-0 mr-9 relative flex flex-col">
           {/* Header */}
           <header className="sticky top-0 z-30 bg-gray-950 border-b-0 px-6 h-20 flex items-center shadow-xl shadow-black/70">
-            <div className="flex items-center justify-between w-full">
+            <div className="flex items-center justify-between w-full max-w-7xl mx-auto" style={{ marginLeft: "auto", marginRight: "auto", transform: "translateX(-8px)" }}>
               {/* Left side: burger + title */}
               <div className="flex items-center space-x-4">
                 <Button variant="ghost" size="sm" onClick={() => setSidebarOpen(true)} className="lg:hidden">
                   <Menu className="w-5 h-5" />
                 </Button>
 
-                <div className="flex items-center space-x-3">
-                  {(tokenLogo || pageLogo) && (
-                    <img
-                      src={tokenLogo || pageLogo}
-                      alt="Token logo"
-                      className="w-12 h-12 rounded-full"
-                      style={{ border: "0.5px solid rgba(255, 255, 255, 0.3)" }}
-                      onError={(e) => {
-                        (e.currentTarget as HTMLImageElement).src = "/oec-logo.png";
-                      }}
-                    />
-                  )}
-
-                  <div className="flex flex-col">
-                    {tokenTicker && tokenName ? (
-                      <div>
-                        <div className="flex items-center space-x-2">
-                          <h1 className="text-xl font-semibold text-white">{tokenTicker}</h1>
-                          {(tokenWebsite || pageWebsite) && (
-                            <a
-                              href={tokenWebsite || pageWebsite}
-                              target="_blank"
-                              rel="noopener noreferrer"
-                              className="text-crypto-blue hover:text-crypto-blue/80 transition-colors"
-                              title="Visit official website"
-                            >
-                              <ExternalLink className="w-4 h-4" />
-                            </a>
-                          )}
-                        </div>
-                        <p className="text-sm text-muted-foreground">{tokenName}</p>
-                      </div>
-                    ) : (
-                      <div>
-                        <div className="flex items-center space-x-2">
-                          <h1 className="text-xl font-semibold text-white">{currentPageInfo.title}</h1>
-                          {(tokenWebsite || pageWebsite) && (
-                            <a
-                              href={tokenWebsite || pageWebsite}
-                              target="_blank"
-                              rel="noopener noreferrer"
-                              className="text-crypto-blue hover:text-crypto-blue/80 transition-colors"
-                              title="Visit official website"
-                            >
-                              <ExternalLink className="w-4 h-4" />
-                            </a>
-                          )}
-                        </div>
-                        <p className="text-sm text-muted-foreground hidden md:block">
-                          {currentPageInfo.description}
-                        </p>
-                      </div>
-                    )}
+                {/* Rewards Locked & Value cards */}
+                <div className="hidden md:grid grid-cols-2 gap-2 -my-2">
+                  <div
+                    className="rounded-lg px-4 py-2.5 border border-cyan-500/25 text-center min-w-[130px] bg-gradient-to-b from-cyan-900/60 to-teal-900/40"
+                  >
+                    <p className="text-[11px] text-gray-400 leading-snug">Rewards Locked</p>
+                    <p className="text-sm font-semibold text-white leading-snug">
+                      {formatLargeNumber(tokenStats.rewardsLocked)}
+                    </p>
+                  </div>
+                  <div
+                    className="rounded-lg px-4 py-2.5 border border-cyan-500/25 text-center min-w-[130px] bg-gradient-to-b from-cyan-900/60 to-teal-900/40"
+                  >
+                    <p className="text-[11px] text-gray-400 leading-snug">Value</p>
+                    <p className="text-sm font-semibold text-white leading-snug">
+                      ${formatDollarValue(rewardsLockedInDollars)}
+                    </p>
                   </div>
                 </div>
               </div>
@@ -732,9 +703,9 @@ export function Layout({
           </header>
 
           {/* Page content + footer */}
-          <main className="flex-1">
+          <main className="flex-1 w-full px-6 mx-auto" style={{ maxWidth: "1360px" }}>
             {children}
-            <footer className="border-t-0 mt-8 py-6 px-6 text-center">
+            <footer className="border-t-0 mt-8 py-6 text-center">
               <p className="text-sm text-muted-foreground">© 2025 Oeconomia. All rights reserved.</p>
             </footer>
           </main>
