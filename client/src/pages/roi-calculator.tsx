@@ -26,7 +26,7 @@ import {
   ResponsiveContainer,
 } from "recharts";
 
-const STAKING_CONTRACT = "0xd12664c1f09fa1561b5f952259d1eb5555af3265";
+import { CONTRACTS } from "@/lib/contracts";
 
 interface Pool {
   id: number;
@@ -178,7 +178,7 @@ export default function ROICalculator() {
       }
       try {
         const poolCount = (await publicClient.readContract({
-          address: STAKING_CONTRACT,
+          address: CONTRACTS.STAKING,
           abi: MultiPoolStakingAPRABI,
           functionName: "poolCount",
         })) as bigint;
@@ -186,7 +186,7 @@ export default function ROICalculator() {
         const fetched: Pool[] = [];
         for (let i = 0; i < Number(poolCount); i++) {
           const info = (await publicClient.readContract({
-            address: STAKING_CONTRACT,
+            address: CONTRACTS.STAKING,
             abi: MultiPoolStakingAPRABI,
             functionName: "getPoolInfo",
             args: [BigInt(i)],
@@ -281,10 +281,16 @@ export default function ROICalculator() {
       color: "text-emerald-400",
     },
     {
-      label: "USD Value",
+      label: "Total USD Value",
       value: `$${formatNumber(usdValue)}`,
       icon: DollarSign,
       color: "text-crypto-gold",
+    },
+    {
+      label: "Rewards USD Value",
+      value: `$${formatNumber(rewards * price)}`,
+      icon: DollarSign,
+      color: "text-yellow-400",
     },
     {
       label: "ROI",
@@ -391,7 +397,7 @@ export default function ROICalculator() {
                 label="Token Price (USD)"
                 value={price}
                 min={0.0001}
-                max={0.1}
+                max={1}
                 step={0.0001}
                 onChange={setPrice}
                 prefix="$"
@@ -487,7 +493,7 @@ export default function ROICalculator() {
           </div>
 
           {/* Stat Summary Cards */}
-          <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 mt-6">
+          <div className="grid grid-cols-2 lg:grid-cols-5 gap-3 mt-6">
             {stats.map((s) => (
               <div
                 key={s.label}
