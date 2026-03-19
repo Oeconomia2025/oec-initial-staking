@@ -93,7 +93,7 @@ export const config = createConfig({
   ],
   transports: {
     [mainnet.id]: http(),
-    [sepolia.id]: http(),
+    [sepolia.id]: http("https://eth-sepolia.g.alchemy.com/v2/esuQ5PPGg8-Sr5-X-P-JT"),
     [bsc.id]: http(),
     [bscTestnet.id]: http(),
     [polygon.id]: http(),
